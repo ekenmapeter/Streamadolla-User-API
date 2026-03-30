@@ -12,7 +12,19 @@
             theme: {
                 extend: {
                     colors: {
-                        primary: { '50': '#eff6ff', '100': '#dbeafe', '200': '#bfdbfe', '300': '#93c5fd', '400': '#60a5fa', '500': '#3b82f6', '600': '#2563eb', '700': '#1d4ed8', '800': '#1e40af', '900': '#1e3a8a', '950': '#172554' },
+                        primary: {
+                            '50': '#eff6ff',
+                            '100': '#dbeafe',
+                            '200': '#bfdbfe',
+                            '300': '#93c5fd',
+                            '400': '#60a5fa',
+                            '500': '#3b82f6',
+                            '600': '#2563eb',
+                            '700': '#1d4ed8',
+                            '800': '#1e40af',
+                            '900': '#1e3a8a',
+                            '950': '#172554'
+                        },
                     }
                 }
             }
@@ -138,7 +150,7 @@
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Alerts -->
-        @if(session('success'))
+        @if (session('success'))
             <div
                 class="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl flex items-center justify-between slide-in">
                 <div class="flex items-center">
@@ -152,7 +164,7 @@
                         class="fas fa-times"></i></button>
             </div>
         @endif
-        @if(session('error'))
+        @if (session('error'))
             <div
                 class="mb-6 p-4 bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 rounded-xl flex items-center justify-between slide-in">
                 <div class="flex items-center">
@@ -178,7 +190,8 @@
                     </div>
                     <div
                         class="h-10 w-10 rounded-full bg-gradient-to-r from-green-100 to-emerald-100 flex items-center justify-center">
-                        <i class="fas fa-wifi text-green-600"></i></div>
+                        <i class="fas fa-wifi text-green-600"></i>
+                    </div>
                 </div>
             </div>
             <div
@@ -190,7 +203,8 @@
                     </div>
                     <div
                         class="h-10 w-10 rounded-full bg-gradient-to-r from-blue-100 to-cyan-100 flex items-center justify-center">
-                        <i class="fas fa-music text-blue-600"></i></div>
+                        <i class="fas fa-music text-blue-600"></i>
+                    </div>
                 </div>
             </div>
             <div
@@ -202,7 +216,8 @@
                     </div>
                     <div
                         class="h-10 w-10 rounded-full bg-gradient-to-r from-gray-100 to-slate-100 flex items-center justify-center">
-                        <i class="fas fa-power-off text-gray-500"></i></div>
+                        <i class="fas fa-power-off text-gray-500"></i>
+                    </div>
                 </div>
             </div>
             <div
@@ -214,7 +229,8 @@
                     </div>
                     <div
                         class="h-10 w-10 rounded-full bg-gradient-to-r from-purple-100 to-violet-100 flex items-center justify-center">
-                        <i class="fas fa-mobile-alt text-purple-600"></i></div>
+                        <i class="fas fa-mobile-alt text-purple-600"></i>
+                    </div>
                 </div>
             </div>
             <div
@@ -227,7 +243,8 @@
                     </div>
                     <div
                         class="h-10 w-10 rounded-full bg-gradient-to-r from-primary-100 to-blue-100 flex items-center justify-center">
-                        <i class="fas fa-tasks text-primary-600"></i></div>
+                        <i class="fas fa-tasks text-primary-600"></i>
+                    </div>
                 </div>
             </div>
             <div
@@ -240,7 +257,8 @@
                     </div>
                     <div
                         class="h-10 w-10 rounded-full bg-gradient-to-r from-red-100 to-rose-100 flex items-center justify-center">
-                        <i class="fas fa-exclamation-triangle text-red-600"></i></div>
+                        <i class="fas fa-exclamation-triangle text-red-600"></i>
+                    </div>
                 </div>
             </div>
         </div>
@@ -276,7 +294,8 @@
                 <div class="lg:col-span-2">
                     <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
                         <div class="bg-gradient-to-r from-primary-600 to-blue-500 px-6 py-4">
-                            <h2 class="text-xl font-bold text-white flex items-center"><i class="fas fa-tasks mr-3"></i>
+                            <h2 class="text-xl font-bold text-white flex items-center"><i
+                                    class="fas fa-tasks mr-3"></i>
                                 Assign Track / Playlist to Devices</h2>
                             <p class="text-primary-100 text-sm">Select devices and assign individual media to play</p>
                         </div>
@@ -291,7 +310,8 @@
                                         <label
                                             class="assign-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-primary-500 bg-primary-50"
                                             data-platform="spotify">
-                                            <input type="radio" name="platform" value="spotify" class="hidden" checked>
+                                            <input type="radio" name="platform" value="spotify" class="hidden"
+                                                checked>
                                             <i class="fab fa-spotify text-green-500 text-xl mr-2"></i>
                                             <span class="font-medium">Spotify</span>
                                         </label>
@@ -354,28 +374,47 @@
                                     </div>
                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-2"
                                         id="assign-device-list">
-                                        @foreach($devices as $device)
+                                        @foreach ($devices as $device)
                                             @php
-                                                $sc = ['online' => ['c' => 'text-green-600', 'b' => 'bg-green-100', 'i' => 'fa-wifi'], 'streaming' => ['c' => 'text-blue-600', 'b' => 'bg-blue-100', 'i' => 'fa-music'], 'offline' => ['c' => 'text-gray-400', 'b' => 'bg-gray-100', 'i' => 'fa-power-off']];
+                                                $sc = [
+                                                    'online' => [
+                                                        'c' => 'text-green-600',
+                                                        'b' => 'bg-green-100',
+                                                        'i' => 'fa-wifi',
+                                                    ],
+                                                    'streaming' => [
+                                                        'c' => 'text-blue-600',
+                                                        'b' => 'bg-blue-100',
+                                                        'i' => 'fa-music',
+                                                    ],
+                                                    'offline' => [
+                                                        'c' => 'text-gray-400',
+                                                        'b' => 'bg-gray-100',
+                                                        'i' => 'fa-power-off',
+                                                    ],
+                                                ];
                                                 $cfg = $sc[$device->status] ?? $sc['offline'];
                                                 $ca = $device->currentAssignment;
                                             @endphp
-                                            <label class="relative cursor-pointer" id="assign-device-{{ $device->id }}">
-                                                <input type="checkbox" name="device_ids[]" value="{{ $device->id }}"
-                                                    class="device-checkbox hidden peer" {{ in_array($device->status, ['online', 'streaming']) ? '' : 'disabled' }}>
+                                            <label class="relative cursor-pointer"
+                                                id="assign-device-{{ $device->id }}">
+                                                <input type="checkbox" name="device_ids[]"
+                                                    value="{{ $device->id }}" class="device-checkbox hidden peer"
+                                                    {{ in_array($device->status, ['online', 'streaming']) ? '' : 'disabled' }}>
                                                 <div
                                                     class="device-select-card p-3 border-2 border-gray-200 rounded-xl smooth-transition hover:border-primary-300 peer-checked:border-primary-500 peer-checked:bg-primary-50 {{ $device->status === 'offline' ? 'opacity-50' : '' }}">
                                                     <div class="flex items-center">
                                                         <div
                                                             class="h-8 w-8 rounded-full {{ $cfg['b'] }} flex items-center justify-center mr-3 flex-shrink-0">
-                                                            <i class="fas {{ $cfg['i'] }} {{ $cfg['c'] }} text-xs"></i>
+                                                            <i
+                                                                class="fas {{ $cfg['i'] }} {{ $cfg['c'] }} text-xs"></i>
                                                         </div>
                                                         <div class="min-w-0 flex-1">
                                                             <p class="font-medium text-gray-900 text-sm truncate">
                                                                 {{ $device->name ?? 'Unnamed' }}</p>
                                                             <p class="text-xs text-gray-400 truncate">
                                                                 {{ $device->device_id }}</p>
-                                                            @if($ca)
+                                                            @if ($ca)
                                                                 <p class="text-xs mt-1 truncate">
                                                                     <i
                                                                         class="fab fa-{{ $ca->platform }} {{ $ca->platform === 'spotify' ? 'text-green-500' : 'text-red-500' }} mr-1"></i>
@@ -421,9 +460,9 @@
                             </h2>
                         </div>
                         <div class="p-4">
-                            @if(isset($activeAssignments) && $activeAssignments->count() > 0)
+                            @if (isset($activeAssignments) && $activeAssignments->count() > 0)
                                 <div class="space-y-3 max-h-[400px] overflow-y-auto pr-1">
-                                    @foreach($activeAssignments as $assignment)
+                                    @foreach ($activeAssignments as $assignment)
                                         <div class="p-3 border border-gray-200 rounded-xl smooth-transition hover:shadow-sm"
                                             data-assignment-id="{{ $assignment->id }}">
                                             <div class="flex items-start justify-between mb-2">
@@ -438,7 +477,13 @@
                                                     </div>
                                                 </div>
                                                 @php
-                                                    $statusColors = ['pending' => 'bg-amber-100 text-amber-700', 'playing' => 'bg-green-100 text-green-700', 'paused' => 'bg-blue-100 text-blue-700', 'stopped' => 'bg-gray-100 text-gray-700', 'failed' => 'bg-red-100 text-red-700'];
+                                                    $statusColors = [
+                                                        'pending' => 'bg-amber-100 text-amber-700',
+                                                        'playing' => 'bg-green-100 text-green-700',
+                                                        'paused' => 'bg-blue-100 text-blue-700',
+                                                        'stopped' => 'bg-gray-100 text-gray-700',
+                                                        'failed' => 'bg-red-100 text-red-700',
+                                                    ];
                                                 @endphp
                                                 <span
                                                     class="text-xs px-2 py-0.5 rounded-full font-medium {{ $statusColors[$assignment->status] ?? 'bg-gray-100' }} flex-shrink-0">
@@ -448,13 +493,13 @@
                                             <p class="text-xs text-gray-400 font-mono truncate mb-2">
                                                 {{ Str::limit($assignment->media_url, 40) }}</p>
                                             <div class="flex space-x-2">
-                                                @if($assignment->status === 'paused' || $assignment->status === 'pending')
+                                                @if ($assignment->status === 'paused' || $assignment->status === 'pending')
                                                     <button
                                                         class="assignment-control flex-1 text-xs px-2 py-1.5 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 smooth-transition font-medium"
                                                         data-id="{{ $assignment->id }}" data-action="play"><i
                                                             class="fas fa-play mr-1"></i>Play</button>
                                                 @endif
-                                                @if($assignment->status === 'playing')
+                                                @if ($assignment->status === 'playing')
                                                     <button
                                                         class="assignment-control flex-1 text-xs px-2 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 smooth-transition font-medium"
                                                         data-id="{{ $assignment->id }}" data-action="pause"><i
@@ -472,7 +517,8 @@
                                 <div class="text-center py-8">
                                     <div
                                         class="h-14 w-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
-                                        <i class="fas fa-tasks text-gray-400 text-xl"></i></div>
+                                        <i class="fas fa-tasks text-gray-400 text-xl"></i>
+                                    </div>
                                     <p class="text-sm text-gray-500">No active tasks</p>
                                     <p class="text-xs text-gray-400">Assign a track to a device to get started</p>
                                 </div>
@@ -490,11 +536,30 @@
                             </h2>
                         </div>
                         <div class="p-4">
-                            @if($devices->count() > 0)
+                            @if ($devices->count() > 0)
                                 <div class="space-y-3 max-h-[350px] overflow-y-auto pr-1" id="connected-devices-list">
-                                    @foreach($devices as $device)
+                                    @foreach ($devices as $device)
                                         @php
-                                            $sc2 = ['online' => ['c' => 'text-green-600', 'b' => 'bg-green-100', 'i' => 'fa-wifi', 'd' => 'bg-green-500'], 'streaming' => ['c' => 'text-blue-600', 'b' => 'bg-blue-100', 'i' => 'fa-music', 'd' => 'bg-blue-500'], 'offline' => ['c' => 'text-gray-400', 'b' => 'bg-gray-100', 'i' => 'fa-power-off', 'd' => 'bg-gray-400']];
+                                            $sc2 = [
+                                                'online' => [
+                                                    'c' => 'text-green-600',
+                                                    'b' => 'bg-green-100',
+                                                    'i' => 'fa-wifi',
+                                                    'd' => 'bg-green-500',
+                                                ],
+                                                'streaming' => [
+                                                    'c' => 'text-blue-600',
+                                                    'b' => 'bg-blue-100',
+                                                    'i' => 'fa-music',
+                                                    'd' => 'bg-blue-500',
+                                                ],
+                                                'offline' => [
+                                                    'c' => 'text-gray-400',
+                                                    'b' => 'bg-gray-100',
+                                                    'i' => 'fa-power-off',
+                                                    'd' => 'bg-gray-400',
+                                                ],
+                                            ];
                                             $cfg2 = $sc2[$device->status] ?? $sc2['offline'];
                                             $ca2 = $device->currentAssignment;
                                         @endphp
@@ -505,7 +570,9 @@
                                                     <div class="relative mr-3 flex-shrink-0">
                                                         <div
                                                             class="h-8 w-8 rounded-full {{ $cfg2['b'] }} flex items-center justify-center">
-                                                            <i class="fas {{ $cfg2['i'] }} {{ $cfg2['c'] }} text-xs"></i></div>
+                                                            <i
+                                                                class="fas {{ $cfg2['i'] }} {{ $cfg2['c'] }} text-xs"></i>
+                                                        </div>
                                                         <div
                                                             class="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full {{ $cfg2['d'] }} border-2 border-white {{ $device->status !== 'offline' ? 'pulse-dot' : '' }}">
                                                         </div>
@@ -516,7 +583,7 @@
                                                         <p class="text-xs text-gray-400">
                                                             {{ $device->last_seen ? $device->last_seen->diffForHumans() : 'Never' }}
                                                         </p>
-                                                        @if($ca2)
+                                                        @if ($ca2)
                                                             <p class="text-xs mt-0.5"><i
                                                                     class="fab fa-{{ $ca2->platform }} {{ $ca2->platform === 'spotify' ? 'text-green-500' : 'text-red-500' }} mr-1"></i><span
                                                                     class="text-gray-500">{{ $ca2->media_title ?? Str::limit($ca2->media_url, 20) }}</span>
@@ -532,7 +599,8 @@
                                                     <button
                                                         class="edit-device h-8 w-8 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 smooth-transition flex items-center justify-center"
                                                         data-device-id="{{ $device->id }}"
-                                                        data-device-name="{{ $device->name }}" title="Rename Device"><i
+                                                        data-device-name="{{ $device->name }}"
+                                                        title="Rename Device"><i
                                                             class="fas fa-edit text-xs"></i></button>
                                                     <button
                                                         class="remove-device h-8 w-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 smooth-transition flex items-center justify-center"
@@ -547,7 +615,8 @@
                                 <div class="text-center py-8">
                                     <div
                                         class="h-14 w-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
-                                        <i class="fas fa-mobile-alt text-gray-400 text-xl"></i></div>
+                                        <i class="fas fa-mobile-alt text-gray-400 text-xl"></i>
+                                    </div>
                                     <p class="text-sm text-gray-500">No devices connected</p>
                                 </div>
                             @endif
@@ -584,15 +653,16 @@
                                     <label
                                         class="campaign-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-emerald-500 bg-emerald-50"
                                         data-platform="spotify">
-                                        <input type="radio" name="campaign_platform" value="spotify" class="hidden"
-                                            checked>
+                                        <input type="radio" name="campaign_platform" value="spotify"
+                                            class="hidden" checked>
                                         <i class="fab fa-spotify text-green-500 text-xl mr-2"></i><span
                                             class="font-medium">Spotify</span>
                                     </label>
                                     <label
                                         class="campaign-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-gray-200"
                                         data-platform="youtube">
-                                        <input type="radio" name="campaign_platform" value="youtube" class="hidden">
+                                        <input type="radio" name="campaign_platform" value="youtube"
+                                            class="hidden">
                                         <i class="fab fa-youtube text-red-500 text-xl mr-2"></i><span
                                             class="font-medium">YouTube</span>
                                     </label>
@@ -608,14 +678,16 @@
                                         class="text-xs px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 smooth-transition font-medium"><i
                                             class="fas fa-plus mr-1"></i>Add Track</button>
                                 </div>
-                                <div id="campaignTracksContainer" class="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                                <div id="campaignTracksContainer"
+                                    class="space-y-2 max-h-[300px] overflow-y-auto pr-1">
                                     <div class="campaign-track-row flex items-center space-x-2">
                                         <span class="text-xs text-gray-400 font-bold w-5 flex-shrink-0">1</span>
                                         <input type="text" placeholder="spotify:track:xxx or YouTube URL"
                                             class="campaign-track-url flex-1 p-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500">
                                         <input type="text" placeholder="Title (optional)"
                                             class="campaign-track-title w-28 p-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500">
-                                        <input type="number" placeholder="180" value="180" min="30" max="7200"
+                                        <input type="number" placeholder="180" value="180" min="30"
+                                            max="7200"
                                             class="campaign-track-duration w-16 p-2.5 border border-gray-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-emerald-500"
                                             title="Duration in seconds">
                                     </div>
@@ -643,9 +715,9 @@
                             </h2>
                         </div>
                         <div class="p-4">
-                            @if(isset($campaigns) && $campaigns->count() > 0)
+                            @if (isset($campaigns) && $campaigns->count() > 0)
                                 <div class="space-y-4 max-h-[600px] overflow-y-auto pr-1">
-                                    @foreach($campaigns as $campaign)
+                                    @foreach ($campaigns as $campaign)
                                         <div class="p-4 border border-gray-200 rounded-xl smooth-transition hover:shadow-md"
                                             data-campaign-id="{{ $campaign->id }}">
                                             <div class="flex items-start justify-between mb-3">
@@ -655,8 +727,10 @@
                                                             class="fab fa-{{ $campaign->platform }} {{ $campaign->platform === 'spotify' ? 'text-green-500' : 'text-red-500' }} text-lg mr-2"></i>
                                                         <h3 class="font-bold text-gray-900">{{ $campaign->name }}</h3>
                                                     </div>
-                                                    <p class="text-xs text-gray-400 mt-1">{{ $campaign->tracks->count() }}
-                                                        tracks &bull; {{ $campaign->assignments_count ?? 0 }} assignments</p>
+                                                    <p class="text-xs text-gray-400 mt-1">
+                                                        {{ $campaign->tracks->count() }}
+                                                        tracks &bull; {{ $campaign->assignments_count ?? 0 }}
+                                                        assignments</p>
                                                 </div>
                                                 <div class="flex space-x-2">
                                                     <button
@@ -683,7 +757,7 @@
                                             <!-- Track List -->
                                             <div class="bg-gray-50 rounded-lg p-3">
                                                 <div class="space-y-1.5">
-                                                    @foreach($campaign->tracks as $track)
+                                                    @foreach ($campaign->tracks as $track)
                                                         <div class="flex items-center text-sm">
                                                             <span
                                                                 class="text-xs font-bold text-gray-400 w-5">{{ $loop->iteration }}</span>
@@ -703,9 +777,11 @@
                                 <div class="text-center py-12">
                                     <div
                                         class="h-16 w-16 rounded-full bg-purple-100 flex items-center justify-center mx-auto mb-4">
-                                        <i class="fas fa-layer-group text-purple-400 text-2xl"></i></div>
+                                        <i class="fas fa-layer-group text-purple-400 text-2xl"></i>
+                                    </div>
                                     <p class="text-sm text-gray-500 font-medium">No campaigns yet</p>
-                                    <p class="text-xs text-gray-400 mt-1">Create your first campaign to start auto-looping
+                                    <p class="text-xs text-gray-400 mt-1">Create your first campaign to start
+                                        auto-looping
                                         tracks on your devices</p>
                                 </div>
                             @endif
@@ -746,11 +822,13 @@
                             <div class="grid grid-cols-2 gap-3 mb-4">
                                 <label
                                     class="flex items-center p-3 border rounded-xl cursor-pointer smooth-transition hover:border-primary-300"><input
-                                        type="radio" name="action" value="play" class="h-4 w-4 text-primary-600"
-                                        checked><span class="ml-2 text-sm font-medium">Play</span></label>
+                                        type="radio" name="action" value="play"
+                                        class="h-4 w-4 text-primary-600" checked><span
+                                        class="ml-2 text-sm font-medium">Play</span></label>
                                 <label
                                     class="flex items-center p-3 border rounded-xl cursor-pointer smooth-transition hover:border-primary-300"><input
-                                        type="radio" name="action" value="pause" class="h-4 w-4 text-primary-600"><span
+                                        type="radio" name="action" value="pause"
+                                        class="h-4 w-4 text-primary-600"><span
                                         class="ml-2 text-sm font-medium">Pause</span></label>
                             </div>
                             <div id="bcast-spotify-group" class="mb-4">
@@ -760,7 +838,8 @@
                             </div>
                             <div id="bcast-youtube-group" class="hidden mb-4">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">YouTube URL</label>
-                                <input type="text" name="youtube_url" placeholder="https://www.youtube.com/watch?v=..."
+                                <input type="text" name="youtube_url"
+                                    placeholder="https://www.youtube.com/watch?v=..."
                                     class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500">
                             </div>
                             <button type="submit"
@@ -774,11 +853,13 @@
                     class="bg-white rounded-2xl shadow-lg p-8 border border-gray-100 flex flex-col items-center justify-center text-center">
                     <div
                         class="h-20 w-20 rounded-full bg-gradient-to-r from-primary-100 to-blue-100 flex items-center justify-center mb-4">
-                        <i class="fas fa-broadcast-tower text-primary-600 text-3xl"></i></div>
+                        <i class="fas fa-broadcast-tower text-primary-600 text-3xl"></i>
+                    </div>
                     <h3 class="text-xl font-bold text-gray-900 mb-2">Broadcast Mode</h3>
                     <p class="text-gray-500 max-w-sm">This sends the <strong>same command to ALL online
                             devices</strong>. For assigning different tracks to different devices, use the
-                        <strong>Assign Tasks</strong> tab instead.</p>
+                        <strong>Assign Tasks</strong> tab instead.
+                    </p>
                 </div>
             </div>
         </div>
