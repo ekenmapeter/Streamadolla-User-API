@@ -13,6 +13,7 @@ class Device extends Model
         'name',
         'device_id',
         'fcm_token',
+        'proxy_url',
         'status',
         'last_seen',
         'metadata'

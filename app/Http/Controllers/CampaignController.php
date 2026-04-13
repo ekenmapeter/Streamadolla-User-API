@@ -155,7 +155,12 @@ class CampaignController extends Controller
         $sendResults = ['successful' => 0, 'failed' => 0, 'errors' => []];
         $assignments = [];
 
-        foreach ($request->device_ids as $deviceId) {
+        $deviceIds = $request->device_ids;
+        $deviceCount = count($deviceIds);
+        $trackCount = $tracks->count();
+        $baseItemsPerDevice = floor($trackCount / $deviceCount);
+
+        foreach ($deviceIds as $index => $deviceId) {
             $device = Device::find($deviceId);
             if (!$device || !$device->fcm_token) continue;
 
@@ -164,24 +169,32 @@ class CampaignController extends Controller
                 ->whereIn('status', ['pending', 'playing', 'paused'])
                 ->update(['status' => 'stopped']);
 
-            // Get the current time to use as a stable seed for randomization
-            $assignedAt = now();
+            // ── Calculate Track Subset ──────────────────────────────────
+            $startIndex = (int)($index * $baseItemsPerDevice);
+            // Last device gets all remaining tracks
+            $endIndex = ($index === $deviceCount - 1) 
+                ? $trackCount - 1 
+                : (int)(($index + 1) * $baseItemsPerDevice - 1);
+            
+            // Ensure indices are within bounds (defensive)
+            $startIndex = max(0, min($startIndex, $trackCount - 1));
+            $endIndex = max($startIndex, min($endIndex, $trackCount - 1));
 
-            // Create a stable shuffle based on device_id, campaign_id and the assigned timestamp
-            $seed = "{$device->id}_{$campaign->id}_{$assignedAt->timestamp}";
-            $shuffledTracks = $tracks->sortBy(fn($t) => md5($seed . $t->id))->values();
-            $firstTrack = $shuffledTracks->first();
+            $shuffledTracks = $tracks->values(); // Sequential as per user request
+            $firstTrack = $shuffledTracks->get($startIndex);
 
-            // Create assignment with the first track already determined
+            // Create assignment with the calculated subset
             $assignment = DeviceAssignment::create([
                 'device_id'         => $device->id,
                 'campaign_id'       => $campaign->id,
                 'campaign_track_id' => $firstTrack->id,
+                'subset_start_index' => $startIndex,
+                'subset_end_index'   => $endIndex,
                 'platform'          => $campaign->platform,
                 'media_url'         => $firstTrack->media_url,
                 'media_title'       => $firstTrack->media_title ?? $campaign->name . ' - ' . $firstTrack->media_url,
                 'status'            => 'pending',
-                'assigned_at'       => $assignedAt,
+                'assigned_at'       => now(),
             ]);
 
             // Send FCM to start playing first track
@@ -194,6 +207,7 @@ class CampaignController extends Controller
                         'track_id'      => $firstTrack->media_url,
                         'youtube_url'   => $firstTrack->media_url,
                         'media_url'     => $firstTrack->media_url,
+                        'proxy_url'     => (string)($device->proxy_url ?? ''), // Automated proxy setup
                         'action'        => 'play',
                         'platform'      => $campaign->platform,
                         'assignment_id' => (string) $assignment->id,

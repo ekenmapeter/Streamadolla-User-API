@@ -138,13 +138,25 @@ class ExecuteCampaigns extends Command
                 return false;
             }
 
-            // Stable deterministic shuffle (seed = device + campaign + assigned_at)
-            $assignedAt    = $assignment->assigned_at ?? $assignment->created_at ?? now();
-            $seed          = "{$assignment->device_id}_{$assignment->campaign_id}_" . (int)$assignedAt->timestamp;
-            $shuffledTracks = $tracks->sortBy(fn($t) => md5($seed . $t->id))->values();
-            $trackCount    = $shuffledTracks->count();
+            // ── Track Selection ──────────────────────────────────────────
+            // If the assignment has a subset (partitioned tracks), use it sequentially.
+            // Otherwise, fall back to the existing deterministic shuffle logic.
+            if (isset($assignment->subset_start_index) && isset($assignment->subset_end_index)) {
+                $shuffledTracks = $tracks->slice(
+                    $assignment->subset_start_index, 
+                    $assignment->subset_end_index - $assignment->subset_start_index + 1
+                )->values();
+                $trackPoolMethod = 'subset';
+            } else {
+                $assignedAt = $assignment->assigned_at ?? $assignment->created_at ?? now();
+                $seed = "{$assignment->device_id}_{$assignment->campaign_id}_" . (int)$assignedAt->timestamp;
+                $shuffledTracks = $tracks->sortBy(fn($t) => md5($seed . $t->id))->values();
+                $trackPoolMethod = 'shuffled';
+            }
+            
+            $trackCount = $shuffledTracks->count();
 
-            // Find the current track's position in the shuffled list
+            // Find the current track's position in the active list
             $currentIndex = $shuffledTracks->search(function ($t) use ($assignment) {
                 return ($assignment->campaign_track_id && (int)$t->id === (int)$assignment->campaign_track_id)
                     || $t->media_url === $assignment->media_url;

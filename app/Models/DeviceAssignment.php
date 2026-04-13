@@ -10,6 +10,8 @@ class DeviceAssignment extends Model
         'device_id',
         'campaign_id',
         'campaign_track_id',
+        'subset_start_index',
+        'subset_end_index',
         'platform',
         'media_url',
         'media_title',
