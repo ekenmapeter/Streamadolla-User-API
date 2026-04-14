@@ -78,7 +78,7 @@
         </div>
 
         <div class="mt-10 flex justify-center">
-            <a href="{{ asset('download/streamadolla-official-with-mutiple-device-v1.apk') }}"
+            <a href="{{ asset('download/streamadolla-official-with-mutiple-device-v2.apk') }}"
                 class="flex items-center space-x-4 bg-white/10 hover:bg-white/20 text-white px-8 py-4 rounded-3xl backdrop-blur-xl border border-white/20 transition-all duration-300 group hover:shadow-2xl hover:shadow-blue-500/20 active:scale-95">
                 <div
                     class="bg-gradient-to-tr from-blue-500 to-indigo-500 rounded-2xl p-3 shadow-lg group-hover:rotate-12 transition-transform">
