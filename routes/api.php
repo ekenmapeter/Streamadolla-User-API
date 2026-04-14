@@ -44,6 +44,10 @@ Route::prefix('campaigns')->group(function () {
     Route::post('/{campaign}/deploy', [CampaignController::class, 'deploy']);
 });
 
+// ── Proxy Automation routes ─────────────────────────────────────────────
+use App\Http\Controllers\ProxyAutomationController;
+Route::get('/proxies/refresh', [ProxyAutomationController::class, 'refresh']);
+
 // ── Dashboard routes ─────────────────────────────────────────────────────
 use App\Http\Controllers\DashboardController;
 Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
