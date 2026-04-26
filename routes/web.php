@@ -23,6 +23,7 @@ Route::middleware(['auth'])->group(function () {
         ->name('assign.task');
 
     Route::get('/device-assignments', [DeviceAssignmentController::class, 'index'])->name('assignments.index');
+    Route::get('/device-assignments/stats', [DeviceAssignmentController::class, 'stats'])->name('assignments.stats');
     Route::post('/device-assignments/clear', [DeviceAssignmentController::class, 'clearAll'])->name('assignments.clear');
 });
 

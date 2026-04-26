@@ -192,11 +192,9 @@
                                                 $waitingTracks = collect();
                                                 
                                                 if ($currentIndex !== false) {
-                                                    // Add tracks after current
                                                     for ($i = $currentIndex + 1; $i <= $assignment->subset_end_index; $i++) {
                                                         if (isset($allTracks[$i])) $waitingTracks->push($allTracks[$i]);
                                                     }
-                                                    // Add tracks before current (since it loops)
                                                     for ($i = $assignment->subset_start_index; $i < $currentIndex; $i++) {
                                                         if (isset($allTracks[$i])) $waitingTracks->push($allTracks[$i]);
                                                     }
@@ -204,19 +202,21 @@
                                             @endphp
                                             
                                             @if($waitingTracks->count() > 0)
-                                                <div class="mt-3 bg-slate-50 rounded-lg p-2 border border-slate-100">
-                                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Waiting in Loop</p>
-                                                    <ul class="space-y-1">
-                                                        @foreach($waitingTracks->take(3) as $wTrack)
-                                                            <li class="text-xs text-slate-600 truncate px-1 flex items-center">
-                                                                <i class="fas fa-level-up-alt rotate-90 text-slate-300 mr-1.5 text-[10px]"></i>
-                                                                {{ $wTrack->media_title ?? $wTrack->media_url }}
-                                                            </li>
-                                                        @endforeach
-                                                        @if($waitingTracks->count() > 3)
-                                                            <li class="text-[10px] font-bold text-slate-400 px-1 mt-1">+ {{ $waitingTracks->count() - 3 }} more tracks</li>
-                                                        @endif
-                                                    </ul>
+                                                <div class="mt-3 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors" onclick="document.getElementById('loop-{{ $assignment->id }}').classList.toggle('hidden')">
+                                                    <div class="p-2 flex items-center justify-between">
+                                                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1"><i class="fas fa-list-ol mr-1"></i> View Looping Tracks ({{ $waitingTracks->count() }})</p>
+                                                        <i class="fas fa-chevron-down text-[10px] text-slate-400"></i>
+                                                    </div>
+                                                    <div id="loop-{{ $assignment->id }}" class="hidden px-2 pb-2 border-t border-slate-100 pt-2">
+                                                        <ul class="space-y-1">
+                                                            @foreach($waitingTracks as $wTrack)
+                                                                <li class="text-xs text-slate-600 truncate px-1 flex items-center">
+                                                                    <i class="fas fa-level-up-alt rotate-90 text-slate-300 mr-1.5 text-[10px]"></i>
+                                                                    {{ $wTrack->media_title ?? $wTrack->media_url }}
+                                                                </li>
+                                                            @endforeach
+                                                        </ul>
+                                                    </div>
                                                 </div>
                                             @else
                                                 <div class="mt-3 bg-slate-50 rounded-lg p-2 border border-slate-100">
@@ -307,9 +307,12 @@
                 
                 if (remaining > 0) {
                     const interval = setInterval(() => {
-                        remaining--;
+                        // Dynamically read remaining so AJAX can sync it
+                        let currentRemaining = parseInt(timer.getAttribute('data-remaining'), 10);
+                        currentRemaining--;
+                        timer.setAttribute('data-remaining', currentRemaining);
                         
-                        if (remaining <= 0) {
+                        if (currentRemaining <= 0) {
                             clearInterval(interval);
                             display.innerText = '00:00';
                             
@@ -329,12 +332,9 @@
                             .then(res => res.json())
                             .then(data => {
                                 if(data.success) {
-                                    // Row gracefully fades out, then page reloads to reflect new assignment state
                                     if(row) {
                                         row.style.opacity = '0';
-                                        setTimeout(() => {
-                                            window.location.reload();
-                                        }, 500);
+                                        setTimeout(() => { window.location.reload(); }, 500);
                                     } else {
                                         window.location.reload();
                                     }
@@ -342,13 +342,39 @@
                             })
                             .catch(err => console.error('Next track error:', err));
                         } else {
-                            const m = Math.floor(remaining / 60).toString().padStart(2, '0');
-                            const s = (remaining % 60).toString().padStart(2, '0');
+                            const m = Math.floor(currentRemaining / 60).toString().padStart(2, '0');
+                            const s = (currentRemaining % 60).toString().padStart(2, '0');
                             display.innerText = `${m}:${s}`;
                         }
                     }, 1000);
                 }
             });
+
+            // AJAX Real-time Synchronization
+            function syncTimers() {
+                fetch('{{ route('assignments.stats') }}')
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            data.assignments.forEach(assignment => {
+                                const timerEl = document.querySelector(`.track-timer[data-assignment-id="${assignment.id}"]`);
+                                if (timerEl) {
+                                    const domRemaining = parseInt(timerEl.getAttribute('data-remaining') || 0, 10);
+                                    // Snap to server time if desynced by more than 2 seconds
+                                    if (Math.abs(domRemaining - assignment.remaining) > 2) {
+                                        timerEl.setAttribute('data-remaining', assignment.remaining);
+                                    }
+                                }
+                            });
+                        }
+                    })
+                    .catch(err => console.error('Error syncing timers:', err));
+            }
+
+            // Sync every 5 seconds
+            setInterval(syncTimers, 5000);
+            // Quick sync on load
+            setTimeout(syncTimers, 500);
         });
     </script>
 </body>

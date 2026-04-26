@@ -20,6 +20,37 @@ class DeviceAssignmentController extends Controller
         return view('assignments.index', compact('assignments'));
     }
 
+    public function stats()
+    {
+        $assignments = DeviceAssignment::with(['campaignTrack'])
+            ->whereIn('status', ['playing', 'pending', 'paused'])
+            ->get()
+            ->map(function ($a) {
+                $duration = $a->campaignTrack ? $a->campaignTrack->duration_seconds : 180;
+                $elapsed = 0;
+                
+                if ($a->started_at) {
+                    $diff = now()->timestamp - $a->started_at->timestamp;
+                    $elapsed = $diff > 0 ? $diff : 0; // Fixes future time glitch
+                }
+                
+                $timeRemaining = max(0, $duration - $elapsed);
+                
+                return [
+                    'id' => $a->id,
+                    'status' => $a->status,
+                    'remaining' => $timeRemaining,
+                    'media_title' => $a->media_title,
+                    'media_url' => $a->media_url,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'assignments' => $assignments
+        ]);
+    }
+
     public function clearAll()
     {
         $activeAssignments = DeviceAssignment::with('device')->whereIn('status', ['playing', 'pending', 'paused'])->get();
