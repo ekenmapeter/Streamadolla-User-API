@@ -253,17 +253,23 @@
                                                 @php
                                                     $isPlaying = $track->id === $assignment->campaign_track_id;
                                                 @endphp
-                                                <div class="flex items-center text-sm {{ $isPlaying ? 'bg-white rounded-md shadow-sm border border-slate-200 px-3 py-2' : 'px-3 py-1' }}">
-                                                    <span class="text-xs font-bold {{ $isPlaying ? 'text-primary-500' : 'text-slate-400' }} w-8">{{ $idx + 1 }}</span>
+                                                <div class="flex items-center text-sm rounded-lg {{ $isPlaying ? 'bg-emerald-50 border-2 border-emerald-300 px-3 py-2.5 shadow-sm' : 'px-3 py-1.5 hover:bg-white/50' }}">
+                                                    <span class="text-xs font-bold {{ $isPlaying ? 'text-emerald-600' : 'text-slate-400' }} w-8">{{ $idx + 1 }}</span>
                                                     @if($isPlaying)
-                                                        <i class="fas fa-volume-up text-primary-500 text-xs mr-3 animate-pulse"></i>
+                                                        <span class="relative flex h-3 w-3 mr-3">
+                                                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                                            <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                                                        </span>
                                                     @else
                                                         <i class="fas fa-music text-slate-300 text-xs mr-3"></i>
                                                     @endif
-                                                    <span class="flex-1 truncate {{ $isPlaying ? 'text-primary-700 font-bold' : 'text-slate-600' }}" title="{{ $track->media_title ?? $track->media_url }}">
+                                                    <span class="flex-1 truncate {{ $isPlaying ? 'text-emerald-800 font-bold' : 'text-slate-600' }}" title="{{ $track->media_title ?? $track->media_url }}">
                                                         {{ $track->media_title ?? \Illuminate\Support\Str::limit($track->media_url, 50) }}
                                                     </span>
-                                                    <span class="text-xs {{ $isPlaying ? 'text-primary-500 font-bold' : 'text-slate-400' }} ml-4 font-mono">{{ gmdate('i:s', $track->duration_seconds) }}</span>
+                                                    @if($isPlaying)
+                                                        <span class="text-[9px] font-black uppercase tracking-wider bg-emerald-500 text-white px-2 py-0.5 rounded-full ml-2">Now Playing</span>
+                                                    @endif
+                                                    <span class="text-xs {{ $isPlaying ? 'text-emerald-600 font-bold' : 'text-slate-400' }} ml-3 font-mono">{{ gmdate('i:s', $track->duration_seconds) }}</span>
                                                 </div>
                                             @endforeach
                                         </div>
