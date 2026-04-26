@@ -178,52 +178,43 @@
                                 </td>
                                 <td class="px-8 py-6">
                                     <div class="max-w-xs">
-                                        <p class="font-bold text-slate-900 truncate" title="{{ $assignment->media_title }}">
-                                            {{ $assignment->media_title ?? 'Untitled Media' }}
-                                        </p>
-                                        <p class="text-xs text-slate-400 truncate font-mono">
-                                            {{ $assignment->media_url }}
-                                        </p>
-
                                         @if($assignment->campaign && $assignment->campaignTrack)
                                             @php
                                                 $allTracks = $assignment->campaign->tracks->sortBy('position_order')->values();
-                                                $currentIndex = $allTracks->search(fn($t) => $t->id === $assignment->campaign_track_id);
-                                                $waitingTracks = collect();
-                                                
-                                                if ($currentIndex !== false) {
-                                                    for ($i = $currentIndex + 1; $i <= $assignment->subset_end_index; $i++) {
-                                                        if (isset($allTracks[$i])) $waitingTracks->push($allTracks[$i]);
-                                                    }
-                                                    for ($i = $assignment->subset_start_index; $i < $currentIndex; $i++) {
-                                                        if (isset($allTracks[$i])) $waitingTracks->push($allTracks[$i]);
-                                                    }
-                                                    
-                                                    // If there are no other tracks, it means this single track is looping over itself
-                                                    if ($waitingTracks->isEmpty()) {
-                                                        $waitingTracks->push($allTracks[$currentIndex]);
-                                                    }
+                                                $assignedTracks = collect();
+                                                for ($i = $assignment->subset_start_index; $i <= $assignment->subset_end_index; $i++) {
+                                                    if (isset($allTracks[$i])) $assignedTracks->push($allTracks[$i]);
                                                 }
                                             @endphp
                                             
-                                            @if($waitingTracks->count() > 0)
-                                                <div class="mt-3 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors" onclick="document.getElementById('loop-{{ $assignment->id }}').classList.toggle('hidden')">
-                                                    <div class="p-2 flex items-center justify-between">
-                                                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1"><i class="fas fa-list-ol mr-1"></i> View Looping Tracks ({{ $waitingTracks->count() }})</p>
-                                                        <i class="fas fa-chevron-down text-[10px] text-slate-400"></i>
-                                                    </div>
-                                                    <div id="loop-{{ $assignment->id }}" class="hidden px-2 pb-2 border-t border-slate-100 pt-2">
-                                                        <ul class="space-y-1">
-                                                            @foreach($waitingTracks as $wTrack)
-                                                                <li class="text-xs text-slate-600 truncate px-1 flex items-center">
-                                                                    <i class="fas fa-level-up-alt rotate-90 text-slate-300 mr-1.5 text-[10px]"></i>
-                                                                    {{ $wTrack->media_title ?? $wTrack->media_url }}
-                                                                </li>
-                                                            @endforeach
-                                                        </ul>
-                                                    </div>
+                                            <div class="bg-slate-50 rounded-lg p-2.5 border border-slate-100">
+                                                <div class="space-y-1.5">
+                                                    @foreach($assignedTracks as $idx => $track)
+                                                        @php
+                                                            $isPlaying = $track->id === $assignment->campaign_track_id;
+                                                        @endphp
+                                                        <div class="flex items-center text-sm {{ $isPlaying ? 'bg-white rounded-md shadow-sm border border-slate-100 px-2 -mx-2 py-1.5' : '' }}">
+                                                            <span class="text-xs font-bold {{ $isPlaying ? 'text-primary-500' : 'text-slate-400' }} w-5">{{ $idx + 1 }}</span>
+                                                            @if($isPlaying)
+                                                                <i class="fas fa-volume-up text-primary-500 text-[10px] mr-2"></i>
+                                                            @else
+                                                                <i class="fas fa-music text-slate-300 text-[10px] mr-2"></i>
+                                                            @endif
+                                                            <span class="flex-1 truncate {{ $isPlaying ? 'text-primary-700 font-bold' : 'text-slate-600' }}" title="{{ $track->media_title ?? $track->media_url }}">
+                                                                {{ $track->media_title ?? \Illuminate\Support\Str::limit($track->media_url, 30) }}
+                                                            </span>
+                                                            <span class="text-[10px] {{ $isPlaying ? 'text-primary-400 font-bold' : 'text-slate-400' }} ml-2 font-mono">{{ gmdate('i:s', $track->duration_seconds) }}</span>
+                                                        </div>
+                                                    @endforeach
                                                 </div>
-                                            @endif
+                                            </div>
+                                        @else
+                                            <p class="font-bold text-slate-900 truncate" title="{{ $assignment->media_title }}">
+                                                {{ $assignment->media_title ?? 'Untitled Media' }}
+                                            </p>
+                                            <p class="text-xs text-slate-400 truncate font-mono">
+                                                {{ $assignment->media_url }}
+                                            </p>
                                         @endif
                                     </div>
                                 </td>
