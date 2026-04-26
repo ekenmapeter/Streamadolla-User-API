@@ -342,7 +342,24 @@ class AssignmentController extends Controller
             $currentIndex = $shuffledTracks->search(fn($t) => $t->id === $currentTrack->id);
             
             if ($currentIndex !== false) {
-                // 1. Determine next track with INFINITE LOOP within subset
+                // 1. Send stop command first to cleanly halt the device
+                try {
+                    $stopMsg = CloudMessage::withTarget('token', $device->fcm_token)
+                        ->withData([
+                            'command'       => 'stop',
+                            'action'        => 'stop',
+                            'assignment_id' => (string) $assignment->id,
+                            'timestamp'     => (string) now()->timestamp,
+                            'command_id'    => Str::uuid()->toString(),
+                        ])
+                        ->withAndroidConfig(['priority' => 'high']);
+                    $this->messaging->send($stopMsg);
+                } catch (\Exception $e) {}
+
+                // Give the device 3 full seconds to process the stop command and avoid conflicts
+                sleep(3);
+
+                // 2. Determine next track with INFINITE LOOP within subset
                 $nextIndex = $currentIndex + 1;
                 if ($nextIndex > $assignment->subset_end_index) {
                     $nextIndex = $assignment->subset_start_index;

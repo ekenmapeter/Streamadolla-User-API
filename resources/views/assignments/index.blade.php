@@ -178,6 +178,13 @@
                                 </td>
                                 <td class="px-8 py-6">
                                     <div class="max-w-xs">
+                                        <p class="font-bold text-slate-900 truncate" title="{{ $assignment->media_title }}">
+                                            {{ $assignment->media_title ?? 'Untitled Media' }}
+                                        </p>
+                                        <p class="text-xs text-slate-400 truncate font-mono mb-3">
+                                            {{ $assignment->media_url }}
+                                        </p>
+
                                         @if($assignment->campaign && $assignment->campaignTrack)
                                             @php
                                                 $allTracks = $assignment->campaign->tracks->sortBy('position_order')->values();

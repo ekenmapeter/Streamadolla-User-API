@@ -154,4 +154,10 @@ class DashboardController extends Controller
                             ->update(['status' => 'stopped']);
         }
     }
+
+    public function clearLogs()
+    {
+        \App\Models\DeviceLog::truncate();
+        return redirect()->route('dashboard')->with('success', 'All activity logs have been cleared successfully.');
+    }
 }

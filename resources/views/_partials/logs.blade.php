@@ -10,6 +10,13 @@
             <button class="log-filter px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-500/30 text-blue-200 hover:bg-blue-500/50 smooth-transition" data-level="info">Info</button>
             <button class="log-filter px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-500/30 text-amber-200 hover:bg-amber-500/50 smooth-transition" data-level="warning">Warning</button>
             <button class="log-filter px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/30 text-red-200 hover:bg-red-500/50 smooth-transition" data-level="error">Errors</button>
+            <div class="h-6 w-px bg-slate-700 mx-1"></div>
+            <form action="{{ route('logs.clear') }}" method="POST" class="inline m-0" onsubmit="return confirm('Are you sure you want to clear all logs? This action cannot be undone.');">
+                @csrf
+                <button type="submit" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-rose-500 text-white hover:bg-rose-400 smooth-transition shadow-sm">
+                    <i class="fas fa-trash-alt mr-1"></i>Clear Logs
+                </button>
+            </form>
         </div>
     </div>
     <div class="p-4">
