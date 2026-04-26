@@ -23,6 +23,7 @@ Route::middleware(['auth'])->group(function () {
         ->name('assign.task');
 
     Route::get('/device-assignments', [DeviceAssignmentController::class, 'index'])->name('assignments.index');
+    Route::post('/device-assignments/clear', [DeviceAssignmentController::class, 'clearAll'])->name('assignments.clear');
 });
 
 // Your API routes remain separate

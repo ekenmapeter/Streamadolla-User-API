@@ -15,4 +15,12 @@ class DeviceAssignmentController extends Controller
 
         return view('assignments.index', compact('assignments'));
     }
+
+    public function clearAll()
+    {
+        DeviceAssignment::truncate();
+        \App\Models\Device::where('status', 'streaming')->update(['status' => 'online']);
+        
+        return back()->with('success', 'All assignments have been cleared.');
+    }
 }

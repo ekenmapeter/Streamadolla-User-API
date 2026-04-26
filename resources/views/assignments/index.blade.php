@@ -117,6 +117,18 @@
     </nav>
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        @if (session('success'))
+            <div class="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center mr-4"><i class="fas fa-check-circle text-emerald-600"></i></div>
+                    <div>
+                        <p class="font-bold text-emerald-800">{{ session('success') }}</p>
+                    </div>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-emerald-800 hover:text-emerald-900"><i class="fas fa-times"></i></button>
+            </div>
+        @endif
+
         <!-- Control Header -->
         <div class="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-6">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1">
@@ -136,6 +148,15 @@
                     <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Errors</p>
                     <p class="text-2xl font-black text-rose-500">{{ $assignments->where('status', 'failed')->count() }}</p>
                 </div>
+            </div>
+            
+            <div class="flex items-center">
+                <form action="{{ route('assignments.clear') }}" method="POST" onsubmit="return confirm('Are you sure you want to clear all assignments? Devices streaming will be set to online.');">
+                    @csrf
+                    <button type="submit" class="px-6 py-4 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-2xl font-bold transition-colors border border-rose-200 shadow-sm">
+                        <i class="fas fa-trash-alt mr-2"></i>Clear All
+                    </button>
+                </form>
             </div>
         </div>
 
