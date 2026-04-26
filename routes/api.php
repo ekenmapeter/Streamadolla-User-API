@@ -30,6 +30,7 @@ Route::prefix('assignments')->group(function () {
     Route::post('/', [AssignmentController::class, 'store']);
     Route::put('/{assignment}/status', [AssignmentController::class, 'updateStatus']);
     Route::post('/{assignment}/control', [AssignmentController::class, 'control']);
+    Route::post('/{assignment}/next', [AssignmentController::class, 'nextTrack']);
     Route::delete('/{assignment}', [AssignmentController::class, 'destroy']);
 });
 

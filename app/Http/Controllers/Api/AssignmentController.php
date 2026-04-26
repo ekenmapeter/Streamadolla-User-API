@@ -321,4 +321,73 @@ class AssignmentController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Move to the next track in the campaign subset.
+     */
+    public function nextTrack(DeviceAssignment $assignment)
+    {
+        $device = $assignment->device;
+        if (!$device || !$device->fcm_token) {
+            return response()->json(['success' => false, 'message' => 'Device not found'], 400);
+        }
+
+        if ($assignment->campaign_id && $assignment->campaign_track_id) {
+            $currentTrack = $assignment->campaignTrack;
+            $campaign = $assignment->campaign;
+            
+            $tracks = $campaign->tracks()->orderBy('position_order')->get();
+            $shuffledTracks = $tracks->values();
+            
+            $currentIndex = $shuffledTracks->search(fn($t) => $t->id === $currentTrack->id);
+            
+            if ($currentIndex !== false && $currentIndex < $assignment->subset_end_index) {
+                $nextTrack = $shuffledTracks->get($currentIndex + 1);
+                
+                $assignment->update([
+                    'campaign_track_id' => $nextTrack->id,
+                    'media_url' => $nextTrack->media_url,
+                    'media_title' => $nextTrack->media_title ?? $campaign->name . ' - ' . $nextTrack->media_url,
+                    'started_at' => now(),
+                    'status' => 'playing'
+                ]);
+
+                try {
+                    $command = $assignment->platform === 'spotify' ? 'play_spotify' : 'play_youtube';
+                    $message = CloudMessage::withTarget('token', $device->fcm_token)
+                        ->withData([
+                            'command'       => $command,
+                            'track_id'      => $nextTrack->media_url,
+                            'youtube_url'   => $nextTrack->media_url,
+                            'media_url'     => $nextTrack->media_url,
+                            'action'        => 'play',
+                            'platform'      => $assignment->platform,
+                            'assignment_id' => (string) $assignment->id,
+                            'timestamp'     => (string) now()->timestamp,
+                            'command_id'    => Str::uuid()->toString(),
+                        ])
+                        ->withAndroidConfig(['priority' => 'high']);
+                    
+                    $this->messaging->send($message);
+                    return response()->json(['success' => true, 'message' => 'Next track sent']);
+                } catch (\Exception $e) {
+                    $assignment->update(['status' => 'failed']);
+                    return response()->json(['success' => false, 'message' => $e->getMessage()]);
+                }
+            }
+        }
+
+        // If no next track or not a campaign, complete the assignment
+        $assignment->update(['status' => 'completed']);
+        $device->update(['status' => 'online']);
+        
+        try {
+            $message = CloudMessage::withTarget('token', $device->fcm_token)
+                ->withData(['command' => 'stop', 'action' => 'stop', 'assignment_id' => (string) $assignment->id])
+                ->withAndroidConfig(['priority' => 'high']);
+            $this->messaging->send($message);
+        } catch (\Exception $e) {}
+
+        return response()->json(['success' => true, 'message' => 'Assignment completed']);
+    }
 }

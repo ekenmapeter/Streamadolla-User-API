@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\DeviceAssignmentController;
 
 // Auth Routes
 Route::get('/', [LoginController::class, 'showLoginForm'])->name('login');
@@ -20,6 +21,8 @@ Route::middleware(['auth'])->group(function () {
     // Task assignment route (assign to specific devices)
     Route::post('/assign-task', [DashboardController::class, 'assignTask'])
         ->name('assign.task');
+
+    Route::get('/device-assignments', [DeviceAssignmentController::class, 'index'])->name('assignments.index');
 });
 
 // Your API routes remain separate
