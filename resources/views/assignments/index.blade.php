@@ -198,6 +198,11 @@
                                                     for ($i = $assignment->subset_start_index; $i < $currentIndex; $i++) {
                                                         if (isset($allTracks[$i])) $waitingTracks->push($allTracks[$i]);
                                                     }
+                                                    
+                                                    // If there are no other tracks, it means this single track is looping over itself
+                                                    if ($waitingTracks->isEmpty()) {
+                                                        $waitingTracks->push($allTracks[$currentIndex]);
+                                                    }
                                                 }
                                             @endphp
                                             
@@ -217,10 +222,6 @@
                                                             @endforeach
                                                         </ul>
                                                     </div>
-                                                </div>
-                                            @else
-                                                <div class="mt-3 bg-slate-50 rounded-lg p-2 border border-slate-100">
-                                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Looping single track</p>
                                                 </div>
                                             @endif
                                         @endif
