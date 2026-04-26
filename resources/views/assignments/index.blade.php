@@ -164,7 +164,7 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         @forelse($assignments as $assignment)
-                            <tr class="assignment-row transition-all duration-200" id="row-{{ $assignment->id }}">
+                            <tr class="assignment-row transition-all duration-200 cursor-pointer hover:bg-slate-50" id="row-{{ $assignment->id }}" onclick="document.getElementById('accordion-{{ $assignment->id }}').classList.toggle('hidden')">
                                 <td class="px-8 py-6">
                                     <div class="flex items-center space-x-4">
                                         <div class="h-12 w-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-500">
@@ -181,48 +181,9 @@
                                         <p class="font-bold text-slate-900 truncate" title="{{ $assignment->media_title }}">
                                             {{ $assignment->media_title ?? 'Untitled Media' }}
                                         </p>
-                                        <p class="text-xs text-slate-400 truncate font-mono mb-3">
+                                        <p class="text-xs text-slate-400 truncate font-mono">
                                             {{ $assignment->media_url }}
                                         </p>
-
-                                        @if($assignment->campaign && $assignment->campaignTrack)
-                                            @php
-                                                $allTracks = $assignment->campaign->tracks->sortBy('position_order')->values();
-                                                $assignedTracks = collect();
-                                                for ($i = $assignment->subset_start_index; $i <= $assignment->subset_end_index; $i++) {
-                                                    if (isset($allTracks[$i])) $assignedTracks->push($allTracks[$i]);
-                                                }
-                                            @endphp
-                                            
-                                            <div class="bg-slate-50 rounded-lg p-2.5 border border-slate-100">
-                                                <div class="space-y-1.5">
-                                                    @foreach($assignedTracks as $idx => $track)
-                                                        @php
-                                                            $isPlaying = $track->id === $assignment->campaign_track_id;
-                                                        @endphp
-                                                        <div class="flex items-center text-sm {{ $isPlaying ? 'bg-white rounded-md shadow-sm border border-slate-100 px-2 -mx-2 py-1.5' : '' }}">
-                                                            <span class="text-xs font-bold {{ $isPlaying ? 'text-primary-500' : 'text-slate-400' }} w-5">{{ $idx + 1 }}</span>
-                                                            @if($isPlaying)
-                                                                <i class="fas fa-volume-up text-primary-500 text-[10px] mr-2"></i>
-                                                            @else
-                                                                <i class="fas fa-music text-slate-300 text-[10px] mr-2"></i>
-                                                            @endif
-                                                            <span class="flex-1 truncate {{ $isPlaying ? 'text-primary-700 font-bold' : 'text-slate-600' }}" title="{{ $track->media_title ?? $track->media_url }}">
-                                                                {{ $track->media_title ?? \Illuminate\Support\Str::limit($track->media_url, 30) }}
-                                                            </span>
-                                                            <span class="text-[10px] {{ $isPlaying ? 'text-primary-400 font-bold' : 'text-slate-400' }} ml-2 font-mono">{{ gmdate('i:s', $track->duration_seconds) }}</span>
-                                                        </div>
-                                                    @endforeach
-                                                </div>
-                                            </div>
-                                        @else
-                                            <p class="font-bold text-slate-900 truncate" title="{{ $assignment->media_title }}">
-                                                {{ $assignment->media_title ?? 'Untitled Media' }}
-                                            </p>
-                                            <p class="text-xs text-slate-400 truncate font-mono">
-                                                {{ $assignment->media_url }}
-                                            </p>
-                                        @endif
                                     </div>
                                 </td>
                                 <td class="px-8 py-6">
@@ -272,6 +233,41 @@
                                             <i class="fas fa-clock mr-1"></i> {{ gmdate('i:s', $duration) }}
                                         </div>
                                     @endif
+                                </td>
+                            </tr>
+                            <tr id="accordion-{{ $assignment->id }}" class="hidden bg-slate-50 border-b border-slate-200">
+                                <td colspan="5" class="px-8 py-5">
+                                    <div class="pl-16"> <!-- Indent to align nicely with the columns -->
+                                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3"><i class="fas fa-list-ol mr-1"></i> Assigned Tracks in Loop</p>
+                                        <div class="space-y-1.5 max-w-3xl">
+                                            @php
+                                                $allTracks = $assignment->campaign ? $assignment->campaign->tracks->sortBy('position_order')->values() : collect();
+                                                $assignedTracks = collect();
+                                                if ($assignment->subset_start_index !== null && $assignment->subset_end_index !== null) {
+                                                    for ($i = $assignment->subset_start_index; $i <= $assignment->subset_end_index; $i++) {
+                                                        if (isset($allTracks[$i])) $assignedTracks->push($allTracks[$i]);
+                                                    }
+                                                }
+                                            @endphp
+                                            @foreach($assignedTracks as $idx => $track)
+                                                @php
+                                                    $isPlaying = $track->id === $assignment->campaign_track_id;
+                                                @endphp
+                                                <div class="flex items-center text-sm {{ $isPlaying ? 'bg-white rounded-md shadow-sm border border-slate-200 px-3 py-2' : 'px-3 py-1' }}">
+                                                    <span class="text-xs font-bold {{ $isPlaying ? 'text-primary-500' : 'text-slate-400' }} w-8">{{ $idx + 1 }}</span>
+                                                    @if($isPlaying)
+                                                        <i class="fas fa-volume-up text-primary-500 text-xs mr-3 animate-pulse"></i>
+                                                    @else
+                                                        <i class="fas fa-music text-slate-300 text-xs mr-3"></i>
+                                                    @endif
+                                                    <span class="flex-1 truncate {{ $isPlaying ? 'text-primary-700 font-bold' : 'text-slate-600' }}" title="{{ $track->media_title ?? $track->media_url }}">
+                                                        {{ $track->media_title ?? \Illuminate\Support\Str::limit($track->media_url, 50) }}
+                                                    </span>
+                                                    <span class="text-xs {{ $isPlaying ? 'text-primary-500 font-bold' : 'text-slate-400' }} ml-4 font-mono">{{ gmdate('i:s', $track->duration_seconds) }}</span>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
