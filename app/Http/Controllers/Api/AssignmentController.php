@@ -341,8 +341,31 @@ class AssignmentController extends Controller
             
             $currentIndex = $shuffledTracks->search(fn($t) => $t->id === $currentTrack->id);
             
-            if ($currentIndex !== false && $currentIndex < $assignment->subset_end_index) {
-                $nextTrack = $shuffledTracks->get($currentIndex + 1);
+            if ($currentIndex !== false) {
+                // 1. Send stop command before playing another track
+                try {
+                    $stopMsg = CloudMessage::withTarget('token', $device->fcm_token)
+                        ->withData([
+                            'command'       => 'stop',
+                            'action'        => 'stop',
+                            'assignment_id' => (string) $assignment->id,
+                            'timestamp'     => (string) now()->timestamp,
+                            'command_id'    => Str::uuid()->toString(),
+                        ])
+                        ->withAndroidConfig(['priority' => 'high']);
+                    $this->messaging->send($stopMsg);
+                } catch (\Exception $e) {}
+
+                // Give the device a moment to process the stop
+                sleep(1);
+
+                // 2. Determine next track with INFINITE LOOP within subset
+                $nextIndex = $currentIndex + 1;
+                if ($nextIndex > $assignment->subset_end_index) {
+                    $nextIndex = $assignment->subset_start_index;
+                }
+
+                $nextTrack = $shuffledTracks->get($nextIndex);
                 
                 $assignment->update([
                     'campaign_track_id' => $nextTrack->id,
@@ -369,15 +392,14 @@ class AssignmentController extends Controller
                         ->withAndroidConfig(['priority' => 'high']);
                     
                     $this->messaging->send($message);
-                    return response()->json(['success' => true, 'message' => 'Next track sent']);
+                    return response()->json(['success' => true, 'message' => 'Next track sent in loop']);
                 } catch (\Exception $e) {
                     $assignment->update(['status' => 'failed']);
                     return response()->json(['success' => false, 'message' => $e->getMessage()]);
                 }
             }
         }
-
-        // If no next track or not a campaign, complete the assignment
+        
         $assignment->update(['status' => 'completed']);
         $device->update(['status' => 'online']);
         

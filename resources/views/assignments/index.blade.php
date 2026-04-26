@@ -184,6 +184,46 @@
                                         <p class="text-xs text-slate-400 truncate font-mono">
                                             {{ $assignment->media_url }}
                                         </p>
+
+                                        @if($assignment->campaign && $assignment->campaignTrack)
+                                            @php
+                                                $allTracks = $assignment->campaign->tracks->sortBy('position_order')->values();
+                                                $currentIndex = $allTracks->search(fn($t) => $t->id === $assignment->campaign_track_id);
+                                                $waitingTracks = collect();
+                                                
+                                                if ($currentIndex !== false) {
+                                                    // Add tracks after current
+                                                    for ($i = $currentIndex + 1; $i <= $assignment->subset_end_index; $i++) {
+                                                        if (isset($allTracks[$i])) $waitingTracks->push($allTracks[$i]);
+                                                    }
+                                                    // Add tracks before current (since it loops)
+                                                    for ($i = $assignment->subset_start_index; $i < $currentIndex; $i++) {
+                                                        if (isset($allTracks[$i])) $waitingTracks->push($allTracks[$i]);
+                                                    }
+                                                }
+                                            @endphp
+                                            
+                                            @if($waitingTracks->count() > 0)
+                                                <div class="mt-3 bg-slate-50 rounded-lg p-2 border border-slate-100">
+                                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Waiting in Loop</p>
+                                                    <ul class="space-y-1">
+                                                        @foreach($waitingTracks->take(3) as $wTrack)
+                                                            <li class="text-xs text-slate-600 truncate px-1 flex items-center">
+                                                                <i class="fas fa-level-up-alt rotate-90 text-slate-300 mr-1.5 text-[10px]"></i>
+                                                                {{ $wTrack->media_title ?? $wTrack->media_url }}
+                                                            </li>
+                                                        @endforeach
+                                                        @if($waitingTracks->count() > 3)
+                                                            <li class="text-[10px] font-bold text-slate-400 px-1 mt-1">+ {{ $waitingTracks->count() - 3 }} more tracks</li>
+                                                        @endif
+                                                    </ul>
+                                                </div>
+                                            @else
+                                                <div class="mt-3 bg-slate-50 rounded-lg p-2 border border-slate-100">
+                                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Looping single track</p>
+                                                </div>
+                                            @endif
+                                        @endif
                                     </div>
                                 </td>
                                 <td class="px-8 py-6">
