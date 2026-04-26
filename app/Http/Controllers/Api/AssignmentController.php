@@ -177,6 +177,16 @@ class AssignmentController extends Controller
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
+        // Prevent race condition: If a track was recently started (within 10 seconds), 
+        // completely ignore delayed 'stopped' or 'completed' signals from the app's previous track.
+        if (in_array($request->status, ['stopped', 'completed']) && $assignment->started_at && now()->diffInSeconds($assignment->started_at) < 10) {
+            return response()->json([
+                'success'    => true,
+                'message'    => 'Ignored stale status update due to recent track transition',
+                'assignment' => $assignment,
+            ]);
+        }
+
         $update = ['status' => $request->status];
 
         if ($request->status === 'playing' && !$assignment->started_at) {
