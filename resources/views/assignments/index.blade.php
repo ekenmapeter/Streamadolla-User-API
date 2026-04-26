@@ -100,17 +100,6 @@
                     </a>
                 </div>
 
-                <!-- Global Timer Display -->
-                <div class="flex items-center space-x-6">
-                    <div class="flex flex-col items-end">
-                        <span class="text-[10px] font-bold uppercase tracking-widest text-primary-600">Update Cycle</span>
-                        <div class="flex items-center space-x-3">
-                            <span id="timer-display" class="text-3xl font-black text-slate-900 tabular-nums timer-glow">00:00</span>
-                            <div class="relative h-4 w-4 rounded-full bg-primary-500 pulse-ring flex items-center justify-center">
-                                <div class="h-1.5 w-1.5 rounded-full bg-white"></div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -266,23 +255,6 @@
     </main>
 
     <script>
-        // Global Update Cycle (optional, but keep for visual pulse)
-        let seconds = 0;
-        const timerDisplay = document.getElementById('timer-display');
-        const MAX_SECONDS = 60; 
-
-        function updateTimer() {
-            seconds++;
-            if (seconds >= MAX_SECONDS) {
-                seconds = 0;
-                // window.location.reload(); // Replaced by individual track timers
-            }
-            const mins = Math.floor(seconds / 60);
-            const secs = seconds % 60;
-            if(timerDisplay) timerDisplay.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        }
-        setInterval(updateTimer, 1000);
-
         // Individual Track Timers
         document.addEventListener('DOMContentLoaded', () => {
             const timers = document.querySelectorAll('.track-timer');

@@ -342,7 +342,10 @@ document.addEventListener('DOMContentLoaded', function() {
             showNotification(data.message || 'Deployed!', data.success ? 'success' : 'error');
             document.getElementById('deployCampaignModal').classList.add('hidden');
             this.disabled = false; this.innerHTML = '<i class="fas fa-rocket mr-2"></i>Deploy Now';
-            if (data.success) setTimeout(() => location.reload(), 1000);
+            if (data.success) {
+                window.open('{{ route('assignments.index') }}', '_blank');
+                setTimeout(() => location.reload(), 1000);
+            }
         })
         .catch(err => {
             showNotification('Error: ' + err, 'error');
