@@ -471,7 +471,7 @@
                                     class="ml-auto bg-white/20 text-white text-sm font-medium px-3 py-1 rounded-full">{{ $activeAssignmentCount ?? 0 }}</span>
                             </h2>
                         </div>
-                        <div class="p-4">
+                        <div class="p-4" id="active-tasks-container">
                             @if (isset($activeAssignments) && $activeAssignments->count() > 0)
                                 <div class="space-y-3 max-h-[400px] overflow-y-auto pr-1">
                                     @foreach ($activeAssignments as $assignment)

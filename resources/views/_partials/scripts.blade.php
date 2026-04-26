@@ -620,6 +620,82 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateText('nav-total-count', data.counts.total);
                 updateText('nav-active-count', data.counts.activeTasks);
                 updateText('device-count-badge', data.counts.total);
+
+                // 3. Live-refresh Active Tasks panel
+                const tasksContainer = document.getElementById('active-tasks-container');
+                if (tasksContainer && data.activeAssignments) {
+                    const statusColors = {
+                        'pending': 'bg-amber-100 text-amber-700',
+                        'playing': 'bg-green-100 text-green-700',
+                        'paused':  'bg-blue-100 text-blue-700',
+                        'stopped': 'bg-gray-100 text-gray-700',
+                        'failed':  'bg-red-100 text-red-700',
+                    };
+
+                    if (data.activeAssignments.length > 0) {
+                        let html = '<div class="space-y-3 max-h-[400px] overflow-y-auto pr-1">';
+                        data.activeAssignments.forEach(a => {
+                            const platform = a.platform || 'youtube';
+                            const pIcon = platform === 'spotify' ? 'text-green-500' : 'text-red-500';
+                            const sColor = statusColors[a.status] || 'bg-gray-100 text-gray-700';
+                            const title = a.media_title || 'Untitled';
+                            const deviceName = (a.device && a.device.name) ? a.device.name : 'Unknown Device';
+                            const mediaUrl = a.media_url || '';
+                            const shortUrl = mediaUrl.length > 40 ? mediaUrl.substring(0, 40) + '...' : mediaUrl;
+
+                            html += `<div class="p-3 border border-gray-200 rounded-xl smooth-transition hover:shadow-sm" data-assignment-id="${a.id}">`;
+                            html += `<div class="flex items-start justify-between mb-2">`;
+                            html += `<div class="flex items-center min-w-0">`;
+                            html += `<i class="fab fa-${platform} ${pIcon} text-lg mr-2 flex-shrink-0"></i>`;
+                            html += `<div class="min-w-0">`;
+                            html += `<p class="font-medium text-sm text-gray-900 truncate">${title}</p>`;
+                            html += `<p class="text-xs text-gray-400 truncate">${deviceName}</p>`;
+                            html += `</div></div>`;
+                            html += `<span class="text-xs px-2 py-0.5 rounded-full font-medium ${sColor} flex-shrink-0">${a.status.charAt(0).toUpperCase() + a.status.slice(1)}</span>`;
+                            html += `</div>`;
+                            html += `<p class="text-xs text-gray-400 font-mono truncate mb-2">${shortUrl}</p>`;
+                            html += `<div class="flex space-x-2">`;
+
+                            if (a.status === 'paused' || a.status === 'pending') {
+                                html += `<button class="assignment-control flex-1 text-xs px-2 py-1.5 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 smooth-transition font-medium" data-id="${a.id}" data-action="play"><i class="fas fa-play mr-1"></i>Play</button>`;
+                            }
+                            if (a.status === 'playing') {
+                                html += `<button class="assignment-control flex-1 text-xs px-2 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 smooth-transition font-medium" data-id="${a.id}" data-action="pause"><i class="fas fa-pause mr-1"></i>Pause</button>`;
+                            }
+                            html += `<button class="assignment-control flex-1 text-xs px-2 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 smooth-transition font-medium" data-id="${a.id}" data-action="stop"><i class="fas fa-stop mr-1"></i>Stop</button>`;
+                            html += `</div></div>`;
+                        });
+                        html += '</div>';
+                        tasksContainer.innerHTML = html;
+
+                        // Re-bind event listeners for dynamically created buttons
+                        tasksContainer.querySelectorAll('.assignment-control').forEach(btn => {
+                            btn.addEventListener('click', function(e) {
+                                e.stopPropagation();
+                                const id = this.dataset.id;
+                                const action = this.dataset.action;
+                                const endpoint = action === 'stop' ? `/api/assignments/${id}` : `/api/assignments/${id}/control`;
+                                const method = action === 'stop' ? 'DELETE' : 'POST';
+                                const body = action === 'stop' ? undefined : JSON.stringify({ action: action });
+                                this.disabled = true;
+                                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                                fetch(endpoint, { method, headers, body })
+                                    .then(r => r.json())
+                                    .then(d => { showNotification(d.message || 'Done', d.success ? 'success' : 'error'); })
+                                    .catch(err => { showNotification('Error: ' + err, 'error'); });
+                            });
+                        });
+                    } else {
+                        tasksContainer.innerHTML = `
+                            <div class="text-center py-8">
+                                <div class="h-14 w-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                                    <i class="fas fa-tasks text-gray-400 text-xl"></i>
+                                </div>
+                                <p class="text-sm text-gray-500">No active tasks</p>
+                                <p class="text-xs text-gray-400">Assign a track to a device to get started</p>
+                            </div>`;
+                    }
+                }
             }
 
             firstLoadDone = true;
