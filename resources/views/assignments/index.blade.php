@@ -262,14 +262,23 @@
                                             data-assignment-id="{{ $assignment->id }}"
                                             data-remaining="{{ $timeRemaining }}">
                                             <i class="fas fa-clock mr-1"></i> <span
-                                                class="time-display">{{ gmdate('i:s', $timeRemaining) }}</span>
+                                                class="time-display">{{ $timeRemaining > 3600 ? gmdate('H:i:s', $timeRemaining) : gmdate('i:s', $timeRemaining) }}</span>
                                         </div>
                                     @elseif($assignment->status === 'pending' || $assignment->status === 'paused')
                                         <div
                                             class="mt-2 text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-md inline-block">
-                                            <i class="fas fa-clock mr-1"></i> {{ gmdate('i:s', $duration) }}
+                                            <i class="fas fa-clock mr-1"></i> {{ $duration > 3600 ? gmdate('H:i:s', $duration) : gmdate('i:s', $duration) }}
                                         </div>
                                     @endif
+
+                                    <div class="mt-3">
+                                        <form action="{{ route('assignments.destroy', $assignment->id) }}" method="POST" onsubmit="return confirm('Delete this assignment permanently?');">
+                                            @csrf
+                                            <button type="submit" class="text-[10px] font-black uppercase tracking-widest text-rose-400 hover:text-rose-600 transition-colors">
+                                                <i class="fas fa-times-circle mr-1"></i> Delete Task
+                                            </button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                             <tr id="accordion-{{ $assignment->id }}"
@@ -277,31 +286,16 @@
                                 <td colspan="5" class="px-8 py-5">
                                     <div class="pl-16"> <!-- Indent to align nicely with the columns -->
                                         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
-                                            <i class="fas fa-list-ol mr-1"></i> Assigned Tracks in Loop</p>
+                                            <i class="fas fa-list-ol mr-1"></i> Campaign Tracks (Full Loop)</p>
                                         <div class="space-y-1.5 max-w-3xl">
                                             @php
-                                                $allTracks = $assignment->campaign
+                                                $assignedTracks = $assignment->campaign
                                                     ? $assignment->campaign->tracks->sortBy('position_order')->values()
                                                     : collect();
-                                                $assignedTracks = collect();
-                                                if (
-                                                    $assignment->subset_start_index !== null &&
-                                                    $assignment->subset_end_index !== null
-                                                ) {
-                                                    for (
-                                                        $i = $assignment->subset_start_index;
-                                                        $i <= $assignment->subset_end_index;
-                                                        $i++
-                                                    ) {
-                                                        if (isset($allTracks[$i])) {
-                                                            $assignedTracks->push($allTracks[$i]);
-                                                        }
-                                                    }
-                                                }
                                             @endphp
                                             @foreach ($assignedTracks as $idx => $track)
                                                 @php
-                                                    $isPlaying = $track->id === $assignment->campaign_track_id;
+                                                    $isPlaying = (int)$track->id === (int)$assignment->campaign_track_id;
                                                 @endphp
                                                 <div
                                                     class="flex items-center text-sm rounded-lg {{ $isPlaying ? 'bg-emerald-50 border-2 border-emerald-300 px-3 py-2.5 shadow-sm' : 'px-3 py-1.5 hover:bg-white/50' }}">
@@ -328,7 +322,7 @@
                                                             Playing</span>
                                                     @endif
                                                     <span
-                                                        class="text-xs {{ $isPlaying ? 'text-emerald-600 font-bold' : 'text-slate-400' }} ml-3 font-mono">{{ gmdate('i:s', $track->duration_seconds) }}</span>
+                                                        class="text-xs {{ $isPlaying ? 'text-emerald-600 font-bold' : 'text-slate-400' }} ml-3 font-mono">{{ $track->duration_seconds > 3600 ? gmdate('H:i:s', $track->duration_seconds) : gmdate('i:s', $track->duration_seconds) }}</span>
                                                 </div>
                                             @endforeach
                                         </div>
@@ -408,9 +402,15 @@
                                 })
                                 .catch(err => console.error('Next track error:', err));
                         } else {
-                            const m = Math.floor(currentRemaining / 60).toString().padStart(2, '0');
+                            const h = Math.floor(currentRemaining / 3600);
+                            const m = Math.floor((currentRemaining % 3600) / 60);
                             const s = (currentRemaining % 60).toString().padStart(2, '0');
-                            display.innerText = `${m}:${s}`;
+                            
+                            if (h > 0) {
+                                display.innerText = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s}`;
+                            } else {
+                                display.innerText = `${m.toString().padStart(2, '0')}:${s}`;
+                            }
                         }
                     }, 1000);
                 }

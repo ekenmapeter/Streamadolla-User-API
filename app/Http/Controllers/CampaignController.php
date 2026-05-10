@@ -169,27 +169,13 @@ class CampaignController extends Controller
                 ->whereIn('status', ['pending', 'playing', 'paused'])
                 ->update(['status' => 'stopped']);
 
-            // ── Calculate Track Subset ──────────────────────────────────
-            $startIndex = (int)($index * $baseItemsPerDevice);
-            // Last device gets all remaining tracks
-            $endIndex = ($index === $deviceCount - 1) 
-                ? $trackCount - 1 
-                : (int)(($index + 1) * $baseItemsPerDevice - 1);
+            $firstTrack = $tracks->first();
             
-            // Ensure indices are within bounds (defensive)
-            $startIndex = max(0, min($startIndex, $trackCount - 1));
-            $endIndex = max($startIndex, min($endIndex, $trackCount - 1));
-
-            $shuffledTracks = $tracks->values(); // Sequential as per user request
-            $firstTrack = $shuffledTracks->get($startIndex);
-
-            // Create assignment with the calculated subset
+            // Create assignment
             $assignment = DeviceAssignment::create([
                 'device_id'         => $device->id,
                 'campaign_id'       => $campaign->id,
                 'campaign_track_id' => $firstTrack->id,
-                'subset_start_index' => $startIndex,
-                'subset_end_index'   => $endIndex,
                 'platform'          => $campaign->platform,
                 'media_url'         => $firstTrack->media_url,
                 'media_title'       => $firstTrack->media_title ?? $campaign->name . ' - ' . $firstTrack->media_url,

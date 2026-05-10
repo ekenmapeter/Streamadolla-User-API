@@ -19,15 +19,9 @@ class ExecuteCampaigns extends Command
 
     /**
      * How long (seconds) the worker stays alive per cron invocation.
-     * Set to 290s (4 min 50 sec) so it exits safely before the next
-     * 5-minute cron fires, avoiding overlapping processes.
+     * Since we will move to a 1-minute cron, we can run once and exit.
      */
-    private int $maxRuntime = 290;
-
-    /**
-     * How many seconds to sleep between each internal check loop.
-     */
-    private int $checkInterval = 60;
+    private int $maxRuntime = 55;
 
     public function handle(): int
     {
@@ -39,68 +33,35 @@ class ExecuteCampaigns extends Command
             return 1;
         }
 
-        $workerStart = time();
-        $iteration   = 0;
+        Log::info("ExecuteCampaigns: Worker started.");
+        $this->info("[" . now()->toDateTimeString() . "] Worker started.");
 
-        Log::info("ExecuteCampaigns: Worker started. Will loop every {$this->checkInterval}s for up to {$this->maxRuntime}s.");
-        $this->info("[" . now()->toDateTimeString() . "] Worker started (max runtime: {$this->maxRuntime}s, check every {$this->checkInterval}s).");
+        // Fetch all active playing assignments
+        $activeAssignments = DeviceAssignment::with(['device', 'campaign.tracks', 'campaignTrack'])
+            ->whereNotNull('campaign_id')
+            ->whereNotNull('campaign_track_id')
+            ->where('status', 'playing')
+            ->whereNotNull('started_at')
+            ->get();
 
-        do {
-            $iteration++;
-            $iterationStart = time();
+        $count = $activeAssignments->count();
+        $countMsg = "Found {$count} active playing assignment(s).";
+        $this->line("  " . $countMsg);
+        Log::info("ExecuteCampaigns: " . $countMsg);
 
-            $header = "[" . now()->toDateTimeString() . "] ── Iteration #{$iteration} ──────────────────────";
-            $this->info($header);
-            Log::info($header);
-
-            // Fetch all active playing assignments fresh on every iteration
-            $activeAssignments = DeviceAssignment::with(['device', 'campaign.tracks', 'campaignTrack'])
-                ->whereNotNull('campaign_id')
-                ->whereNotNull('campaign_track_id')
-                ->where('status', 'playing')
-                ->whereNotNull('started_at')
-                ->get();
-
-            $count = $activeAssignments->count();
-            $countMsg = "Found {$count} active playing assignment(s).";
-            $this->line("  " . $countMsg);
-            Log::info("ExecuteCampaigns: " . $countMsg);
-
-            $advanced = 0;
-            foreach ($activeAssignments as $assignment) {
-                if ($this->processSingleAssignment($assignment, $messaging, $force)) {
-                    $advanced++;
-                }
+        $advanced = 0;
+        foreach ($activeAssignments as $assignment) {
+            if ($this->processSingleAssignment($assignment, $messaging, $force)) {
+                $advanced++;
             }
+        }
 
-            if ($advanced > 0) {
-                $this->info("  ✓ Advanced {$advanced} device(s) this iteration.");
-                Log::info("ExecuteCampaigns: Advanced {$advanced} device(s) in iteration #{$iteration}.");
-            } else {
-                $this->comment("  No tracks advanced this iteration.");
-            }
-
-            // Calculate how long until the next check should happen
-            $elapsed         = time() - $workerStart;
-            $timeLeftInRun   = $this->maxRuntime - $elapsed;
-            $iterationTook   = time() - $iterationStart;
-            $sleepFor        = max(0, $this->checkInterval - $iterationTook);
-
-            if ($timeLeftInRun <= $sleepFor + 5) {
-                // Not enough time for another full iteration — exit cleanly
-                break;
-            }
-
-            if ($sleepFor > 0) {
-                $this->line("  Sleeping {$sleepFor}s before next check...");
-                sleep($sleepFor);
-            }
-        } while ((time() - $workerStart) < $this->maxRuntime);
-
-        $totalRan = time() - $workerStart;
-        $doneMsg = "Worker finished after {$totalRan}s ({$iteration} iteration(s)). Next cron will restart it.";
-        $this->info("[" . now()->toDateTimeString() . "] " . $doneMsg);
-        Log::info("ExecuteCampaigns: " . $doneMsg);
+        if ($advanced > 0) {
+            $this->info("  ✓ Advanced {$advanced} device(s).");
+            Log::info("ExecuteCampaigns: Advanced {$advanced} device(s).");
+        } else {
+            $this->comment("  No tracks advanced.");
+        }
 
         return 0;
     }
@@ -139,20 +100,10 @@ class ExecuteCampaigns extends Command
             }
 
             // ── Track Selection ──────────────────────────────────────────
-            // If the assignment has a subset (partitioned tracks), use it sequentially.
-            // Otherwise, fall back to the existing deterministic shuffle logic.
-            if (isset($assignment->subset_start_index) && isset($assignment->subset_end_index)) {
-                $shuffledTracks = $tracks->slice(
-                    $assignment->subset_start_index, 
-                    $assignment->subset_end_index - $assignment->subset_start_index + 1
-                )->values();
-                $trackPoolMethod = 'subset';
-            } else {
-                $assignedAt = $assignment->assigned_at ?? $assignment->created_at ?? now();
-                $seed = "{$assignment->device_id}_{$assignment->campaign_id}_" . (int)$assignedAt->timestamp;
-                $shuffledTracks = $tracks->sortBy(fn($t) => md5($seed . $t->id))->values();
-                $trackPoolMethod = 'shuffled';
-            }
+            // Play all tracks on each phone randomly (deterministic shuffle based on assignment)
+            $assignedAt = $assignment->assigned_at ?? $assignment->created_at ?? now();
+            $seed = "{$assignment->device_id}_{$assignment->campaign_id}_" . (int)$assignedAt->timestamp;
+            $shuffledTracks = $tracks->sortBy(fn($t) => md5($seed . $t->id))->values();
             
             $trackCount = $shuffledTracks->count();
 
@@ -170,8 +121,6 @@ class ExecuteCampaigns extends Command
             }
 
             // ── Timing check ────────────────────────────────────────────
-            // Use raw Unix timestamps (always UTC) — avoids Carbon timezone
-            // sign-flip issues that caused negative playedSeconds.
             $startedAtTs   = ($assignment->started_at ?? $assignment->created_at ?? now())->timestamp;
             $nowTs         = time();
             $playedSeconds = max(0, $nowTs - $startedAtTs);
@@ -190,9 +139,6 @@ class ExecuteCampaigns extends Command
             Log::info($statusMsg);
 
             if (!$force && $playedSeconds < $threshold) {
-                $skipMsg = "  └─ Asgn #{$assignment->id}: Not time yet ({$remaining}s remaining).";
-                $this->line($skipMsg);
-                Log::info($skipMsg);
                 DB::rollBack();
                 return false;
             }

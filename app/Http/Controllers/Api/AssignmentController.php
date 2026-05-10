@@ -213,7 +213,7 @@ class AssignmentController extends Controller
     }
 
     /**
-     * Cancel/stop an assignment.
+     * Cancel/stop and delete an assignment.
      *
      * DELETE /api/assignments/{id}
      */
@@ -244,15 +244,15 @@ class AssignmentController extends Controller
             }
         }
 
-        $assignment->update(['status' => 'stopped']);
+        $assignment->delete();
 
-        if ($device) {
+        if ($device && $device->assignments()->active()->count() === 0) {
             $device->update(['status' => 'online', 'last_seen' => now()]);
         }
 
         return response()->json([
             'success' => true,
-            'message' => 'Assignment cancelled',
+            'message' => 'Assignment deleted',
         ]);
     }
 
@@ -333,7 +333,7 @@ class AssignmentController extends Controller
     }
 
     /**
-     * Move to the next track in the campaign subset.
+     * Move to the next track in the campaign.
      */
     public function nextTrack(DeviceAssignment $assignment)
     {
@@ -369,12 +369,8 @@ class AssignmentController extends Controller
                 // Give the device 3 full seconds to process the stop command and avoid conflicts
                 sleep(3);
 
-                // 2. Determine next track with INFINITE LOOP within subset
-                $nextIndex = $currentIndex + 1;
-                if ($nextIndex > $assignment->subset_end_index) {
-                    $nextIndex = $assignment->subset_start_index;
-                }
-
+                // 2. Determine next track (infinite loop)
+                $nextIndex = ($currentIndex < $shuffledTracks->count() - 1) ? $currentIndex + 1 : 0;
                 $nextTrack = $shuffledTracks->get($nextIndex);
                 
                 $assignment->update([

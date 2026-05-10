@@ -31,7 +31,7 @@ class DeviceAssignmentController extends Controller
                 
                 if ($a->started_at) {
                     $diff = now()->timestamp - $a->started_at->timestamp;
-                    $elapsed = $diff > 0 ? $diff : 0; // Fixes future time glitch
+                    $elapsed = $diff > 0 ? $diff : 0; 
                 }
                 
                 $timeRemaining = max(0, $duration - $elapsed);
@@ -49,6 +49,38 @@ class DeviceAssignmentController extends Controller
             'success' => true,
             'assignments' => $assignments
         ]);
+    }
+
+    public function destroySingle(DeviceAssignment $assignment)
+    {
+        $device = $assignment->device;
+        
+        // Send stop command if it was active
+        if ($assignment->isActive() && $device && $device->fcm_token) {
+            try {
+                $messaging = $this->getMessaging();
+                if ($messaging) {
+                    $message = CloudMessage::withTarget('token', $device->fcm_token)
+                        ->withData([
+                            'command'       => 'stop',
+                            'action'        => 'stop',
+                            'assignment_id' => (string) $assignment->id,
+                            'timestamp'     => (string) now()->timestamp,
+                            'command_id'    => \Illuminate\Support\Str::uuid()->toString(),
+                        ])
+                        ->withAndroidConfig(['priority' => 'high']);
+                    $messaging->send($message);
+                }
+            } catch (\Exception $e) {}
+        }
+
+        $assignment->delete();
+        
+        if ($device && $device->assignments()->active()->count() === 0) {
+            $device->update(['status' => 'online']);
+        }
+
+        return back()->with('success', 'Assignment deleted successfully.');
     }
 
     public function clearAll()
