@@ -116,6 +116,25 @@ class DeviceAssignmentController extends Controller
         return back()->with('success', 'All assignments cleared and stop commands sent to devices.');
     }
 
+    public function runWorker()
+    {
+        try {
+            \Illuminate\Support\Facades\Artisan::call('campaigns:execute');
+            $output = \Illuminate\Support\Facades\Artisan::output();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Worker executed successfully.',
+                'output'  => $output
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Worker failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     private function getMessaging()
     {
         $credentialsPath = base_path(config('firebase.credentials'));

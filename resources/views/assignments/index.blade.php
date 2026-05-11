@@ -155,7 +155,12 @@
                 </div>
             </div>
 
-            <div class="flex items-center">
+            <div class="flex items-center space-x-4">
+                <div id="worker-status" class="flex items-center space-x-2 px-4 py-2 rounded-2xl bg-slate-100 border border-slate-200">
+                    <div class="h-2 w-2 rounded-full bg-slate-400 animate-pulse worker-dot"></div>
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-widest worker-text">Worker: Starting...</span>
+                </div>
+
                 <form action="{{ route('assignments.clear') }}" method="POST"
                     onsubmit="return confirm('Are you sure you want to clear all assignments? Devices streaming will be set to online.');">
                     @csrf
@@ -439,10 +444,48 @@
                     .catch(err => console.error('Error syncing timers:', err));
             }
 
+            // Hidden Worker Trigger (Keeps campaigns advancing)
+            function triggerWorker() {
+                const statusDot = document.querySelector('.worker-dot');
+                const statusText = document.querySelector('.worker-text');
+                
+                // Show activity
+                statusDot.classList.remove('bg-slate-400', 'bg-emerald-500', 'bg-rose-500');
+                statusDot.classList.add('bg-primary-500');
+                statusText.innerText = 'Worker: Checking...';
+
+                fetch('{{ route('assignments.worker') }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(r => r.json())
+                .then(data => {
+                    // Update UI to show success
+                    setTimeout(() => {
+                        statusDot.classList.remove('bg-primary-500');
+                        statusDot.classList.add('bg-emerald-500');
+                        statusText.innerText = 'Worker: OK ' + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+                    }, 1000);
+                })
+                .catch(err => {
+                    console.error('Worker trigger error:', err);
+                    statusDot.classList.remove('bg-primary-500');
+                    statusDot.classList.add('bg-rose-500');
+                    statusText.innerText = 'Worker: Failed';
+                });
+            }
+
             // Sync every 5 seconds
             setInterval(syncTimers, 5000);
-            // Quick sync on load
+            
+            // Run worker check every 30 seconds
+            setInterval(triggerWorker, 30000);
+
+            // Initial runs
             setTimeout(syncTimers, 500);
+            setTimeout(triggerWorker, 2000);
         });
     </script>
 </body>
