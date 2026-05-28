@@ -42,20 +42,28 @@
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Platform</label>
-                    <div class="grid grid-cols-2 gap-3">
-                        <label class="modal-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-primary-500 bg-primary-50" data-platform="spotify">
+                    <div class="grid grid-cols-3 gap-2">
+                        <label class="modal-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-primary-500 bg-primary-50 text-xs" data-platform="spotify">
                             <input type="radio" name="modal_platform" value="spotify" class="hidden" checked>
-                            <i class="fab fa-spotify text-green-500 mr-2"></i><span class="font-medium">Spotify</span>
+                            <i class="fab fa-spotify text-green-500 mr-1 sm:mr-2"></i><span class="font-medium">Spotify</span>
                         </label>
-                        <label class="modal-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-gray-200" data-platform="youtube">
+                        <label class="modal-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-gray-200 text-xs" data-platform="apple_music">
+                            <input type="radio" name="modal_platform" value="apple_music" class="hidden">
+                            <i class="fab fa-apple text-red-600 mr-1 sm:mr-2"></i><span class="font-medium">Apple Music</span>
+                        </label>
+                        <label class="modal-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-gray-200 text-xs" data-platform="youtube">
                             <input type="radio" name="modal_platform" value="youtube" class="hidden">
-                            <i class="fab fa-youtube text-red-500 mr-2"></i><span class="font-medium">YouTube</span>
+                            <i class="fab fa-youtube text-red-500 mr-1 sm:mr-2"></i><span class="font-medium">YouTube</span>
                         </label>
                     </div>
                 </div>
                 <div id="modal-spotify-group">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Spotify URI</label>
                     <input type="text" id="modal_spotify_uri" value="spotify:track:4cOdK2wGLETKBW3PvgPWqT" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none">
+                </div>
+                <div id="modal-apple_music-group" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Apple Music URL</label>
+                    <input type="text" id="modal_apple_music_url" placeholder="https://music.apple.com/..." class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 outline-none">
                 </div>
                 <div id="modal-youtube-group" class="hidden">
                     <label class="block text-sm font-medium text-gray-700 mb-2">YouTube URL</label>
@@ -146,10 +154,14 @@
             <!-- Platform -->
             <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Platform</label>
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-3 gap-3">
                     <label class="edit-campaign-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-gray-200" data-platform="spotify">
                         <input type="radio" name="edit_campaign_platform" value="spotify" class="hidden">
                         <i class="fab fa-spotify text-green-500 text-xl mr-2"></i><span class="font-medium">Spotify</span>
+                    </label>
+                    <label class="edit-campaign-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-gray-200" data-platform="apple_music">
+                        <input type="radio" name="edit_campaign_platform" value="apple_music" class="hidden">
+                        <i class="fab fa-apple text-red-600 text-xl mr-2"></i><span class="font-medium">Apple Music</span>
                     </label>
                     <label class="edit-campaign-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-gray-200" data-platform="youtube">
                         <input type="radio" name="edit_campaign_platform" value="youtube" class="hidden">

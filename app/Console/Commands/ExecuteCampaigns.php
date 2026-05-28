@@ -153,7 +153,9 @@ class ExecuteCampaigns extends Command
             Log::info($advanceMsg);
 
             // Build FCM command
-            $command = $campaign->platform === 'spotify' ? 'play_spotify' : 'play_youtube';
+            $command = $campaign->platform === 'spotify' 
+                ? 'play_spotify' 
+                : ($campaign->platform === 'apple_music' ? 'play_applemusic' : 'play_youtube');
 
             $message = CloudMessage::withTarget('token', $device->fcm_token)
                 ->withData([

@@ -72,7 +72,7 @@ class DashboardController extends Controller
         // Simple validation
         $request->validate([
             'action' => 'required|in:play,pause,stop,open',
-            'platform' => 'nullable|in:spotify,youtube',
+            'platform' => 'nullable|in:spotify,youtube,apple_music',
             'spotify_uri' => 'nullable|string',
             'youtube_url' => 'nullable|string',
             'media_url' => 'nullable|string'
@@ -94,7 +94,7 @@ class DashboardController extends Controller
         $request->validate([
             'device_ids'   => 'required|array|min:1',
             'device_ids.*' => 'exists:devices,id',
-            'platform'     => 'required|in:spotify,youtube',
+            'platform'     => 'required|in:spotify,youtube,apple_music',
             'media_url'    => 'required|string',
             'media_title'  => 'nullable|string|max:255',
         ]);

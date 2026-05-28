@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const p = this.dataset.platform;
             document.getElementById('assign-spotify-group').classList.toggle('hidden', p !== 'spotify');
             document.getElementById('assign-youtube-group').classList.toggle('hidden', p !== 'youtube');
+            document.getElementById('assign-apple_music-group').classList.toggle('hidden', p !== 'apple_music');
         });
     });
 
@@ -57,7 +58,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const platform = document.querySelector('.assign-platform-btn input:checked')?.value || 'spotify';
         const url = platform === 'spotify'
             ? document.getElementById('assign_media_spotify').value
-            : document.getElementById('assign_media_youtube').value;
+            : (platform === 'apple_music'
+                ? document.getElementById('assign_media_apple_music').value
+                : document.getElementById('assign_media_youtube').value);
         if (!url) { e.preventDefault(); showNotification('Please enter a media URL/URI', 'error'); return; }
         document.getElementById('assign_media_url').value = url;
     });
@@ -74,6 +77,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const p = this.dataset.platform;
             document.getElementById('bcast-spotify-group').classList.toggle('hidden', p !== 'spotify');
             document.getElementById('bcast-youtube-group').classList.toggle('hidden', p !== 'youtube');
+            document.getElementById('bcast-apple_music-group').classList.toggle('hidden', p !== 'apple_music');
         });
     });
 
@@ -89,6 +93,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const p = this.dataset.platform;
             document.getElementById('modal-spotify-group').classList.toggle('hidden', p !== 'spotify');
             document.getElementById('modal-youtube-group').classList.toggle('hidden', p !== 'youtube');
+            document.getElementById('modal-apple_music-group').classList.toggle('hidden', p !== 'apple_music');
             this.querySelector('input').checked = true;
         });
     });
@@ -107,7 +112,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const platform = document.querySelector('input[name="modal_platform"]:checked').value;
         const uri = platform === 'spotify'
             ? document.getElementById('modal_spotify_uri').value
-            : document.getElementById('modal_youtube_url').value;
+            : (platform === 'apple_music'
+                ? document.getElementById('modal_apple_music_url').value
+                : document.getElementById('modal_youtube_url').value);
         const title = document.getElementById('modal_media_title')?.value || '';
 
         if (!uri) { showNotification('Please enter a URL/URI', 'error'); return; }
@@ -636,7 +643,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         let html = '<div class="space-y-3 max-h-[400px] overflow-y-auto pr-1">';
                         data.activeAssignments.forEach(a => {
                             const platform = a.platform || 'youtube';
-                            const pIcon = platform === 'spotify' ? 'text-green-500' : 'text-red-500';
+                            const pIcon = platform === 'spotify' ? 'text-green-500' : (platform === 'apple_music' ? 'text-red-600' : 'text-red-500');
+                            const brandIcon = platform === 'apple_music' ? 'apple' : platform;
                             const sColor = statusColors[a.status] || 'bg-gray-100 text-gray-700';
                             const title = a.media_title || 'Untitled';
                             const deviceName = (a.device && a.device.name) ? a.device.name : 'Unknown Device';
@@ -646,7 +654,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             html += `<div class="p-3 border border-gray-200 rounded-xl smooth-transition hover:shadow-sm" data-assignment-id="${a.id}">`;
                             html += `<div class="flex items-start justify-between mb-2">`;
                             html += `<div class="flex items-center min-w-0">`;
-                            html += `<i class="fab fa-${platform} ${pIcon} text-lg mr-2 flex-shrink-0"></i>`;
+                            html += `<i class="fab fa-${brandIcon} ${pIcon} text-lg mr-2 flex-shrink-0"></i>`;
                             html += `<div class="min-w-0">`;
                             html += `<p class="font-medium text-sm text-gray-900 truncate">${title}</p>`;
                             html += `<p class="text-xs text-gray-400 truncate">${deviceName}</p>`;

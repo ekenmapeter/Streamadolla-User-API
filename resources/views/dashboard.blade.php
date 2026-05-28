@@ -318,7 +318,7 @@
                                 <div class="mb-6">
                                     <label class="block text-sm font-medium text-gray-700 mb-2"><i
                                             class="fas fa-headphones mr-2 text-primary-500"></i>Platform</label>
-                                    <div class="grid grid-cols-2 gap-3">
+                                    <div class="grid grid-cols-3 gap-3">
                                         <label
                                             class="assign-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-primary-500 bg-primary-50"
                                             data-platform="spotify">
@@ -326,6 +326,13 @@
                                                 checked>
                                             <i class="fab fa-spotify text-green-500 text-xl mr-2"></i>
                                             <span class="font-medium">Spotify</span>
+                                        </label>
+                                        <label
+                                            class="assign-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-gray-200"
+                                            data-platform="apple_music">
+                                            <input type="radio" name="platform" value="apple_music" class="hidden">
+                                            <i class="fab fa-apple text-red-600 text-xl mr-2"></i>
+                                            <span class="font-medium">Apple Music</span>
                                         </label>
                                         <label
                                             class="assign-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-gray-200"
@@ -348,6 +355,14 @@
                                             class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 smooth-transition">
                                         <p class="text-xs text-gray-500 mt-1">Supports track, album, or playlist URIs
                                         </p>
+                                    </div>
+                                    <div id="assign-apple_music-group" class="hidden">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2"><i
+                                                class="fab fa-apple mr-2 text-red-600"></i>Apple Music URL</label>
+                                        <input type="text" id="assign_media_apple_music"
+                                            placeholder="https://music.apple.com/..."
+                                            class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 smooth-transition">
+                                        <p class="text-xs text-gray-500 mt-1">Supports song, album, or playlist URLs</p>
                                     </div>
                                     <div id="assign-youtube-group" class="hidden">
                                         <label class="block text-sm font-medium text-gray-700 mb-2"><i
@@ -429,7 +444,7 @@
                                                             @if ($ca)
                                                                 <p class="text-xs mt-1 truncate">
                                                                     <i
-                                                                        class="fab fa-{{ $ca->platform }} {{ $ca->platform === 'spotify' ? 'text-green-500' : 'text-red-500' }} mr-1"></i>
+                                                                        class="fab fa-{{ $ca->platform === 'apple_music' ? 'apple' : $ca->platform }} {{ $ca->platform === 'spotify' ? 'text-green-500' : ($ca->platform === 'apple_music' ? 'text-red-600' : 'text-red-500') }} mr-1"></i>
                                                                     <span
                                                                         class="text-gray-500">{{ $ca->media_title ?? Str::limit($ca->media_url, 25) }}</span>
                                                                 </p>
@@ -480,7 +495,7 @@
                                             <div class="flex items-start justify-between mb-2">
                                                 <div class="flex items-center min-w-0">
                                                     <i
-                                                        class="fab fa-{{ $assignment->platform }} {{ $assignment->platform === 'spotify' ? 'text-green-500' : 'text-red-500' }} text-lg mr-2 flex-shrink-0"></i>
+                                                        class="fab fa-{{ $assignment->platform === 'apple_music' ? 'apple' : $assignment->platform }} {{ $assignment->platform === 'spotify' ? 'text-green-500' : ($assignment->platform === 'apple_music' ? 'text-red-600' : 'text-red-500') }} text-lg mr-2 flex-shrink-0"></i>
                                                     <div class="min-w-0">
                                                         <p class="font-medium text-sm text-gray-900 truncate">
                                                             {{ $assignment->media_title ?? 'Untitled' }}</p>
@@ -597,7 +612,7 @@
                                                         </p>
                                                         @if ($ca2)
                                                             <p class="text-xs mt-0.5"><i
-                                                                    class="fab fa-{{ $ca2->platform }} {{ $ca2->platform === 'spotify' ? 'text-green-500' : 'text-red-500' }} mr-1"></i><span
+                                                                    class="fab fa-{{ $ca2->platform === 'apple_music' ? 'apple' : $ca2->platform }} {{ $ca2->platform === 'spotify' ? 'text-green-500' : ($ca2->platform === 'apple_music' ? 'text-red-600' : 'text-red-500') }} mr-1"></i><span
                                                                     class="text-gray-500">{{ $ca2->media_title ?? Str::limit($ca2->media_url, 20) }}</span>
                                                             </p>
                                                         @endif
@@ -661,7 +676,7 @@
                             <div class="mb-4">
                                 <label class="block text-sm font-medium text-gray-700 mb-2"><i
                                         class="fas fa-headphones mr-2 text-emerald-500"></i>Platform</label>
-                                <div class="grid grid-cols-2 gap-3">
+                                <div class="grid grid-cols-3 gap-3">
                                     <label
                                         class="campaign-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-emerald-500 bg-emerald-50"
                                         data-platform="spotify">
@@ -669,6 +684,14 @@
                                             class="hidden" checked>
                                         <i class="fab fa-spotify text-green-500 text-xl mr-2"></i><span
                                             class="font-medium">Spotify</span>
+                                    </label>
+                                    <label
+                                        class="campaign-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-gray-200"
+                                        data-platform="apple_music">
+                                        <input type="radio" name="campaign_platform" value="apple_music"
+                                            class="hidden">
+                                        <i class="fab fa-apple text-red-600 text-xl mr-2"></i><span
+                                            class="font-medium">Apple Music</span>
                                     </label>
                                     <label
                                         class="campaign-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-gray-200"
@@ -736,7 +759,7 @@
                                                 <div>
                                                     <div class="flex items-center">
                                                         <i
-                                                            class="fab fa-{{ $campaign->platform }} {{ $campaign->platform === 'spotify' ? 'text-green-500' : 'text-red-500' }} text-lg mr-2"></i>
+                                                            class="fab fa-{{ $campaign->platform === 'apple_music' ? 'apple' : $campaign->platform }} {{ $campaign->platform === 'spotify' ? 'text-green-500' : ($campaign->platform === 'apple_music' ? 'text-red-600' : 'text-red-500') }} text-lg mr-2"></i>
                                                         <h3 class="font-bold text-gray-900">{{ $campaign->name }}</h3>
                                                     </div>
                                                     <p class="text-xs text-gray-400 mt-1">
@@ -815,13 +838,20 @@
                     <div class="p-6">
                         <form action="{{ route('send.command') }}" method="POST">
                             @csrf
-                            <div class="grid grid-cols-2 gap-3 mb-4">
+                            <div class="grid grid-cols-3 gap-3 mb-4">
                                 <label
                                     class="bcast-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-primary-500 bg-primary-50"
                                     data-platform="spotify">
                                     <input type="radio" name="platform" value="spotify" class="hidden" checked>
                                     <i class="fab fa-spotify text-green-500 mr-2"></i><span
                                         class="font-medium">Spotify</span>
+                                </label>
+                                <label
+                                    class="bcast-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-gray-200"
+                                    data-platform="apple_music">
+                                    <input type="radio" name="platform" value="apple_music" class="hidden">
+                                    <i class="fab fa-apple text-red-600 mr-2"></i><span
+                                        class="font-medium">Apple Music</span>
                                 </label>
                                 <label
                                     class="bcast-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-gray-200"
@@ -847,6 +877,12 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Spotify URI</label>
                                 <input type="text" name="spotify_uri" value="spotify:track:4cOdK2wGLETKBW3PvgPWqT"
                                     class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500">
+                            </div>
+                            <div id="bcast-apple_music-group" class="hidden mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Apple Music URL</label>
+                                <input type="text" name="apple_music_url"
+                                    placeholder="https://music.apple.com/..."
+                                    class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500">
                             </div>
                             <div id="bcast-youtube-group" class="hidden mb-4">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">YouTube URL</label>

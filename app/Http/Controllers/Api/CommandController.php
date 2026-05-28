@@ -46,9 +46,10 @@ class CommandController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'action' => 'required|in:play,pause,stop,open',
-            'platform' => 'nullable|in:spotify,youtube',
+            'platform' => 'nullable|in:spotify,youtube,apple_music',
             'spotify_uri' => 'nullable|string',
             'youtube_url' => 'nullable|string',
+            'apple_music_url' => 'nullable|string',
             'media_url' => 'nullable|string',
             'message' => 'nullable|string'
         ]);
@@ -78,7 +79,13 @@ class CommandController extends Controller
         $mediaUrl = $request->media_url;
         
         if (!$mediaUrl) {
-            $mediaUrl = ($platform === 'spotify') ? $request->spotify_uri : $request->youtube_url;
+            if ($platform === 'spotify') {
+                $mediaUrl = $request->spotify_uri;
+            } elseif ($platform === 'apple_music') {
+                $mediaUrl = $request->apple_music_url;
+            } else {
+                $mediaUrl = $request->youtube_url;
+            }
         }
         
         // Final fallback if still empty
@@ -88,7 +95,7 @@ class CommandController extends Controller
 
         $message = CloudMessage::new()
             ->withData([
-                'command' => $platform == 'spotify' ? 'play_spotify' : ($platform == 'youtube' ? 'play_youtube' : $action),
+                'command' => $platform == 'spotify' ? 'play_spotify' : ($platform == 'apple_music' ? 'play_applemusic' : ($platform == 'youtube' ? 'play_youtube' : $action)),
                 'track_id' => $mediaUrl, // Aliases for different naming conventions
                 'youtube_url' => $mediaUrl,
                 'media_url' => $mediaUrl,
@@ -138,9 +145,10 @@ class CommandController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'action' => 'required|in:play,pause,stop,open',
-            'platform' => 'nullable|in:spotify,youtube',
+            'platform' => 'nullable|in:spotify,youtube,apple_music',
             'spotify_uri' => 'nullable|string',
             'youtube_url' => 'nullable|string',
+            'apple_music_url' => 'nullable|string',
             'media_url' => 'nullable|string'
         ]);
 
@@ -152,7 +160,13 @@ class CommandController extends Controller
         $mediaUrl = $request->media_url;
         
         if (!$mediaUrl) {
-            $mediaUrl = ($platform === 'spotify') ? $request->spotify_uri : $request->youtube_url;
+            if ($platform === 'spotify') {
+                $mediaUrl = $request->spotify_uri;
+            } elseif ($platform === 'apple_music') {
+                $mediaUrl = $request->apple_music_url;
+            } else {
+                $mediaUrl = $request->youtube_url;
+            }
         }
         
         $mediaUrl = $mediaUrl ?? '';
@@ -160,7 +174,7 @@ class CommandController extends Controller
 
         $message = CloudMessage::withTarget('token', $device->fcm_token)
             ->withData([
-                'command' => $platform == 'spotify' ? 'play_spotify' : ($platform == 'youtube' ? 'play_youtube' : $action),
+                'command' => $platform == 'spotify' ? 'play_spotify' : ($platform == 'apple_music' ? 'play_applemusic' : ($platform == 'youtube' ? 'play_youtube' : $action)),
                 'track_id' => $mediaUrl,
                 'youtube_url' => $mediaUrl,
                 'media_url' => $mediaUrl,
@@ -203,9 +217,10 @@ class CommandController extends Controller
             'device_ids' => 'required|array',
             'device_ids.*' => 'exists:devices,id',
             'action' => 'required|in:play,pause,stop,open',
-            'platform' => 'nullable|in:spotify,youtube',
+            'platform' => 'nullable|in:spotify,youtube,apple_music',
             'spotify_uri' => 'nullable|string',
             'youtube_url' => 'nullable|string',
+            'apple_music_url' => 'nullable|string',
             'media_url' => 'nullable|string'
         ]);
 
@@ -227,7 +242,13 @@ class CommandController extends Controller
         $mediaUrl = $request->media_url;
         
         if (!$mediaUrl) {
-            $mediaUrl = ($platform === 'spotify') ? $request->spotify_uri : $request->youtube_url;
+            if ($platform === 'spotify') {
+                $mediaUrl = $request->spotify_uri;
+            } elseif ($platform === 'apple_music') {
+                $mediaUrl = $request->apple_music_url;
+            } else {
+                $mediaUrl = $request->youtube_url;
+            }
         }
         
         $mediaUrl = $mediaUrl ?? '';
@@ -235,7 +256,7 @@ class CommandController extends Controller
 
         $message = CloudMessage::new()
             ->withData([
-                'command' => $platform == 'spotify' ? 'play_spotify' : ($platform == 'youtube' ? 'play_youtube' : $action),
+                'command' => $platform == 'spotify' ? 'play_spotify' : ($platform == 'apple_music' ? 'play_applemusic' : ($platform == 'youtube' ? 'play_youtube' : $action)),
                 'track_id' => $mediaUrl,
                 'youtube_url' => $mediaUrl,
                 'media_url' => $mediaUrl,
