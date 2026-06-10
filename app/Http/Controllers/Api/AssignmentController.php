@@ -79,15 +79,16 @@ class AssignmentController extends Controller
                 try {
                     $message = CloudMessage::withTarget('token', $device->fcm_token)
                         ->withData([
-                            'command'       => $request->platform === 'spotify' ? 'play_spotify' : ($request->platform === 'apple_music' ? 'play_applemusic' : 'play_youtube'),
-                            'track_id'      => $request->media_url,
-                            'youtube_url'   => $request->media_url,
-                            'media_url'     => $request->media_url,
-                            'action'        => 'play',
-                            'platform'      => $request->platform,
-                            'assignment_id' => (string) $assignment->id,
-                            'timestamp'     => (string) now()->timestamp,
-                            'command_id'    => Str::uuid()->toString(),
+                            'command'         => $request->platform === 'spotify' ? 'play_spotify' : ($request->platform === 'apple_music' ? 'play_applemusic' : 'play_youtube'),
+                            'track_id'        => $request->media_url,
+                            'youtube_url'     => $request->media_url,
+                            'apple_music_url' => $request->media_url,
+                            'media_url'       => $request->media_url,
+                            'action'          => 'play',
+                            'platform'        => $request->platform,
+                            'assignment_id'   => (string) $assignment->id,
+                            'timestamp'       => (string) now()->timestamp,
+                            'command_id'      => Str::uuid()->toString(),
                         ])
                         ->withAndroidConfig(['priority' => 'high', 'ttl' => '3600s'])
                         ->withApnsConfig([
@@ -249,8 +250,9 @@ class AssignmentController extends Controller
                 $data['command']     = $assignment->platform === 'spotify' ? 'play_spotify' : ($assignment->platform === 'apple_music' ? 'play_applemusic' : 'play_youtube');
                 $data['platform']    = $assignment->platform;
                 $data['media_url']   = $assignment->media_url;
-                $data['track_id']    = $assignment->media_url;
-                $data['youtube_url'] = $assignment->media_url;
+                $data['track_id']        = $assignment->media_url;
+                $data['youtube_url']     = $assignment->media_url;
+                $data['apple_music_url'] = $assignment->media_url;
             } else {
                 $data['command'] = $action;
             }
@@ -352,15 +354,16 @@ class AssignmentController extends Controller
                     $command = $assignment->platform === 'spotify' ? 'play_spotify' : ($assignment->platform === 'apple_music' ? 'play_applemusic' : 'play_youtube');
                     $message = CloudMessage::withTarget('token', $device->fcm_token)
                         ->withData([
-                            'command'       => $command,
-                            'track_id'      => $nextTrack->media_url,
-                            'youtube_url'   => $nextTrack->media_url,
-                            'media_url'     => $nextTrack->media_url,
-                            'action'        => 'play',
-                            'platform'      => $assignment->platform,
-                            'assignment_id' => (string) $assignment->id,
-                            'timestamp'     => (string) now()->timestamp,
-                            'command_id'    => Str::uuid()->toString(),
+                            'command'         => $command,
+                            'track_id'        => $nextTrack->media_url,
+                            'youtube_url'     => $nextTrack->media_url,
+                            'apple_music_url' => $nextTrack->media_url,
+                            'media_url'       => $nextTrack->media_url,
+                            'action'          => 'play',
+                            'platform'        => $assignment->platform,
+                            'assignment_id'   => (string) $assignment->id,
+                            'timestamp'       => (string) now()->timestamp,
+                            'command_id'      => Str::uuid()->toString(),
                         ])
                         ->withAndroidConfig(['priority' => 'high']);
 
@@ -385,15 +388,16 @@ class AssignmentController extends Controller
                     $command = $assignment->platform === 'spotify' ? 'play_spotify' : ($assignment->platform === 'apple_music' ? 'play_applemusic' : 'play_youtube');
                     $message = CloudMessage::withTarget('token', $device->fcm_token)
                         ->withData([
-                            'command'       => $command,
-                            'track_id'      => $campaignMediaUrl,
-                            'youtube_url'   => $campaignMediaUrl,
-                            'media_url'     => $campaignMediaUrl,
-                            'action'        => 'play',
-                            'platform'      => $assignment->platform,
-                            'assignment_id' => (string) $assignment->id,
-                            'timestamp'     => (string) now()->timestamp,
-                            'command_id'    => Str::uuid()->toString(),
+                            'command'         => $command,
+                            'track_id'        => $campaignMediaUrl,
+                            'youtube_url'     => $campaignMediaUrl,
+                            'apple_music_url' => $campaignMediaUrl,
+                            'media_url'       => $campaignMediaUrl,
+                            'action'          => 'play',
+                            'platform'        => $assignment->platform,
+                            'assignment_id'   => (string) $assignment->id,
+                            'timestamp'       => (string) now()->timestamp,
+                            'command_id'      => Str::uuid()->toString(),
                         ])
                         ->withAndroidConfig(['priority' => 'high']);
 
@@ -424,15 +428,16 @@ class AssignmentController extends Controller
                     $command = $assignment->platform === 'spotify' ? 'play_spotify' : ($assignment->platform === 'apple_music' ? 'play_applemusic' : 'play_youtube');
                     $message = CloudMessage::withTarget('token', $device->fcm_token)
                         ->withData([
-                            'command'       => $command,
-                            'track_id'      => $nextTrack->media_url,
-                            'youtube_url'   => $nextTrack->media_url,
-                            'media_url'     => $nextTrack->media_url,
-                            'action'        => 'play',
-                            'platform'      => $assignment->platform,
-                            'assignment_id' => (string) $assignment->id,
-                            'timestamp'     => (string) now()->timestamp,
-                            'command_id'    => Str::uuid()->toString(),
+                            'command'         => $command,
+                            'track_id'        => $nextTrack->media_url,
+                            'youtube_url'     => $nextTrack->media_url,
+                            'apple_music_url' => $nextTrack->media_url,
+                            'media_url'       => $nextTrack->media_url,
+                            'action'          => 'play',
+                            'platform'        => $assignment->platform,
+                            'assignment_id'   => (string) $assignment->id,
+                            'timestamp'       => (string) now()->timestamp,
+                            'command_id'      => Str::uuid()->toString(),
                         ])
                         ->withAndroidConfig(['priority' => 'high']);
 

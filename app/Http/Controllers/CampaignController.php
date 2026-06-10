@@ -204,14 +204,15 @@ class CampaignController extends Controller
                 $message = CloudMessage::withTarget('token', $device->fcm_token)
                     ->withData([
                         'command'       => $command,
-                        'track_id'      => $firstTrack->media_url,
-                        'youtube_url'   => $firstTrack->media_url,
-                        'media_url'     => $firstTrack->media_url,
-                        'proxy_url'     => (string)($device->proxy_url ?? ''),
-                        'action'        => 'play',
-                        'platform'      => $campaign->platform,
-                        'assignment_id' => (string) $assignment->id,
-                        'timestamp'     => (string) now()->timestamp,
+                        'track_id'        => $firstTrack->media_url,
+                        'youtube_url'     => $firstTrack->media_url,
+                        'apple_music_url' => $firstTrack->media_url,
+                        'media_url'       => $firstTrack->media_url,
+                        'proxy_url'       => (string)($device->proxy_url ?? ''),
+                        'action'          => 'play',
+                        'platform'        => $campaign->platform,
+                        'assignment_id'   => (string) $assignment->id,
+                        'timestamp'       => (string) now()->timestamp,
                         'command_id'    => Str::uuid()->toString(),
                     ])
                     ->withAndroidConfig(['priority' => 'high', 'ttl' => '3600s'])
