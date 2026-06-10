@@ -820,6 +820,7 @@
                                                             &bull; <span class="text-red-500"><i class="fab fa-youtube mr-1"></i>Channel</span>
                                                         @endif
                                                     </p>
+                                                </div>
                                                 <div class="flex space-x-2">
                                                     <button
                                                          class="edit-campaign px-3 py-1.5 bg-amber-50 text-amber-600 text-xs rounded-lg hover:bg-amber-100 smooth-transition font-medium"
