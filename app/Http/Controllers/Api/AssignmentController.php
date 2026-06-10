@@ -38,17 +38,6 @@ class AssignmentController extends Controller
         $this->messaging = $factory->createMessaging();
     }
 
-    /**
-     * Create assignment(s) — assign media to one or more devices.
-     *
-     * POST /api/assignments
-     * {
-     *   "device_ids": [1, 2, 3],       // array of device IDs
-     *   "platform": "spotify",           // or "youtube"
-     *   "media_url": "spotify:track:xxx",
-     *   "media_title": "My Track"        // optional
-     * }
-     */
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -71,12 +60,10 @@ class AssignmentController extends Controller
         $sendResults = ['successful' => 0, 'failed' => 0, 'errors' => []];
 
         foreach ($devices as $device) {
-            // Stop any existing active assignments for this device
             DeviceAssignment::forDevice($device->id)
                 ->active()
                 ->update(['status' => 'stopped']);
 
-            // Create new assignment
             $assignment = DeviceAssignment::create([
                 'device_id'   => $device->id,
                 'platform'    => $request->platform,
@@ -88,7 +75,6 @@ class AssignmentController extends Controller
 
             $assignments[] = $assignment;
 
-            // Send FCM to this device
             if ($device->fcm_token) {
                 try {
                     $message = CloudMessage::withTarget('token', $device->fcm_token)
@@ -111,7 +97,6 @@ class AssignmentController extends Controller
 
                     $this->messaging->send($message);
 
-                    // Mark assignment as playing immediately since FCM was sent successfully
                     $assignment->update(['status' => 'playing', 'started_at' => now()]);
                     $device->update(['status' => 'streaming', 'last_seen' => now()]);
                     $sendResults['successful']++;
@@ -134,11 +119,6 @@ class AssignmentController extends Controller
         ]);
     }
 
-    /**
-     * List all assignments, optionally filtered.
-     *
-     * GET /api/assignments?status=active&device_id=5
-     */
     public function index(Request $request)
     {
         $query = DeviceAssignment::with('device')->orderBy('assigned_at', 'desc');
@@ -161,12 +141,6 @@ class AssignmentController extends Controller
         ]);
     }
 
-    /**
-     * Device reports a status update for an assignment.
-     *
-     * PUT /api/assignments/{id}/status
-     * { "status": "playing" }
-     */
     public function updateStatus(Request $request, DeviceAssignment $assignment)
     {
         $validator = Validator::make($request->all(), [
@@ -177,8 +151,6 @@ class AssignmentController extends Controller
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        // Prevent race condition: If a track was recently started (within 10 seconds), 
-        // completely ignore delayed 'stopped' or 'completed' signals from the app's previous track.
         if (in_array($request->status, ['stopped', 'completed']) && $assignment->started_at && now()->diffInSeconds($assignment->started_at) < 10) {
             return response()->json([
                 'success'    => true,
@@ -195,7 +167,6 @@ class AssignmentController extends Controller
 
         $assignment->update($update);
 
-        // Also update device status
         $newDeviceStatus = in_array($request->status, ['playing', 'paused'])
             ? 'streaming'
             : 'online';
@@ -212,14 +183,8 @@ class AssignmentController extends Controller
         ]);
     }
 
-    /**
-     * Cancel/stop and delete an assignment.
-     *
-     * DELETE /api/assignments/{id}
-     */
     public function destroy(DeviceAssignment $assignment)
     {
-        // Send stop command to the device
         $device = $assignment->device;
 
         if ($device && $device->fcm_token) {
@@ -240,7 +205,6 @@ class AssignmentController extends Controller
 
                 $this->messaging->send($message);
             } catch (\Exception $e) {
-                // Log but don't fail the deletion
             }
         }
 
@@ -256,12 +220,6 @@ class AssignmentController extends Controller
         ]);
     }
 
-    /**
-     * Send a control command (pause/resume/stop) to an existing assignment.
-     *
-     * POST /api/assignments/{id}/control
-     * { "action": "pause" }
-     */
     public function control(Request $request, DeviceAssignment $assignment)
     {
         $validator = Validator::make($request->all(), [
@@ -287,7 +245,6 @@ class AssignmentController extends Controller
                 'command_id'    => Str::uuid()->toString(),
             ];
 
-            // For play/resume, include the media info
             if ($action === 'play') {
                 $data['command']     = $assignment->platform === 'spotify' ? 'play_spotify' : ($assignment->platform === 'apple_music' ? 'play_applemusic' : 'play_youtube');
                 $data['platform']    = $assignment->platform;
@@ -308,7 +265,6 @@ class AssignmentController extends Controller
 
             $this->messaging->send($message);
 
-            // Update assignment status
             $newStatus = match($action) {
                 'play'  => 'playing',
                 'pause' => 'paused',
@@ -316,7 +272,6 @@ class AssignmentController extends Controller
             };
             $assignment->update(['status' => $newStatus]);
 
-            // Update device status
             $deviceStatus = $action === 'stop' ? 'online' : 'streaming';
             $device->update(['status' => $deviceStatus, 'last_seen' => now()]);
 
@@ -332,9 +287,6 @@ class AssignmentController extends Controller
         }
     }
 
-    /**
-     * Move to the next track in the campaign.
-     */
     public function nextTrack(DeviceAssignment $assignment)
     {
         $device = $assignment->device;
@@ -343,42 +295,57 @@ class AssignmentController extends Controller
         }
 
         if ($assignment->campaign_id && $assignment->campaign_track_id) {
-            $currentTrack = $assignment->campaignTrack;
             $campaign = $assignment->campaign;
-            
+
             $tracks = $campaign->tracks()->orderBy('position_order')->get();
-            $shuffledTracks = $tracks->values();
-            
-            $currentIndex = $shuffledTracks->search(fn($t) => $t->id === $currentTrack->id);
-            
-            if ($currentIndex !== false) {
-                // 1. Send stop command first to cleanly halt the device
-                try {
-                    $stopMsg = CloudMessage::withTarget('token', $device->fcm_token)
-                        ->withData([
-                            'command'       => 'stop',
-                            'action'        => 'stop',
-                            'assignment_id' => (string) $assignment->id,
-                            'timestamp'     => (string) now()->timestamp,
-                            'command_id'    => Str::uuid()->toString(),
-                        ])
-                        ->withAndroidConfig(['priority' => 'high']);
-                    $this->messaging->send($stopMsg);
-                } catch (\Exception $e) {}
 
-                // Give the device 3 full seconds to process the stop command and avoid conflicts
-                sleep(3);
+            // Same deterministic shuffle as ExecuteCampaigns
+            $assignedAt = $assignment->assigned_at ?? $assignment->created_at ?? now();
+            $seed = "{$assignment->device_id}_{$assignment->campaign_id}_" . (int)$assignedAt->timestamp;
+            $shuffledTracks = $tracks->sortBy(fn($t) => md5($seed . $t->id))->values();
 
-                // 2. Determine next track (infinite loop)
-                $nextIndex = ($currentIndex < $shuffledTracks->count() - 1) ? $currentIndex + 1 : 0;
+            $trackCount = $shuffledTracks->count();
+            $currentIndex = (int)($assignment->shuffled_index ?? 0);
+            $isInterstitial = (bool)$assignment->is_interstitial;
+            $cycleCount = (int)($assignment->cycle_track_count ?? 0);
+
+            if ($currentIndex >= $trackCount) {
+                $currentIndex = 0;
+            }
+
+            // 1. Send stop command first
+            try {
+                $stopMsg = CloudMessage::withTarget('token', $device->fcm_token)
+                    ->withData([
+                        'command'       => 'stop',
+                        'action'        => 'stop',
+                        'assignment_id' => (string) $assignment->id,
+                        'timestamp'     => (string) now()->timestamp,
+                        'command_id'    => Str::uuid()->toString(),
+                    ])
+                    ->withAndroidConfig(['priority' => 'high']);
+                $this->messaging->send($stopMsg);
+            } catch (\Exception $e) {}
+
+            sleep(3);
+
+            $campaignMediaUrl = $campaign->interstitial_media_url;
+            $interstitialInterval = $campaign->interstitial_every;
+
+            if ($isInterstitial) {
+                // Interstitial finished → resume playlist at next track
+                $nextIndex = ($currentIndex < $trackCount - 1) ? $currentIndex + 1 : 0;
                 $nextTrack = $shuffledTracks->get($nextIndex);
-                
+
                 $assignment->update([
                     'campaign_track_id' => $nextTrack->id,
-                    'media_url' => $nextTrack->media_url,
-                    'media_title' => $nextTrack->media_title ?? $campaign->name . ' - ' . $nextTrack->media_url,
-                    'started_at' => now(),
-                    'status' => 'playing'
+                    'shuffled_index'    => $nextIndex,
+                    'cycle_track_count' => 0,
+                    'is_interstitial'   => false,
+                    'media_url'         => $nextTrack->media_url,
+                    'media_title'       => $nextTrack->media_title ?? $campaign->name . ' - ' . $nextTrack->media_url,
+                    'started_at'        => now(),
+                    'status'            => 'playing',
                 ]);
 
                 try {
@@ -396,19 +363,91 @@ class AssignmentController extends Controller
                             'command_id'    => Str::uuid()->toString(),
                         ])
                         ->withAndroidConfig(['priority' => 'high']);
-                    
+
                     $this->messaging->send($message);
-                    return response()->json(['success' => true, 'message' => 'Next track sent in loop']);
+                    return response()->json(['success' => true, 'message' => 'Resumed from interstitial']);
+                } catch (\Exception $e) {
+                    $assignment->update(['status' => 'failed']);
+                    return response()->json(['success' => false, 'message' => $e->getMessage()]);
+                }
+
+            } elseif ($interstitialInterval && $campaignMediaUrl && $cycleCount >= $interstitialInterval) {
+                // Play interstitial instead of next playlist track
+                $assignment->update([
+                    'is_interstitial'   => true,
+                    'media_url'         => $campaignMediaUrl,
+                    'media_title'       => 'Interstitial - ' . basename($campaignMediaUrl),
+                    'started_at'        => now(),
+                    'status'            => 'playing',
+                ]);
+
+                try {
+                    $command = $assignment->platform === 'spotify' ? 'play_spotify' : ($assignment->platform === 'apple_music' ? 'play_applemusic' : 'play_youtube');
+                    $message = CloudMessage::withTarget('token', $device->fcm_token)
+                        ->withData([
+                            'command'       => $command,
+                            'track_id'      => $campaignMediaUrl,
+                            'youtube_url'   => $campaignMediaUrl,
+                            'media_url'     => $campaignMediaUrl,
+                            'action'        => 'play',
+                            'platform'      => $assignment->platform,
+                            'assignment_id' => (string) $assignment->id,
+                            'timestamp'     => (string) now()->timestamp,
+                            'command_id'    => Str::uuid()->toString(),
+                        ])
+                        ->withAndroidConfig(['priority' => 'high']);
+
+                    $this->messaging->send($message);
+                    return response()->json(['success' => true, 'message' => 'Interstitial playing']);
+                } catch (\Exception $e) {
+                    $assignment->update(['status' => 'failed']);
+                    return response()->json(['success' => false, 'message' => $e->getMessage()]);
+                }
+
+            } else {
+                // Normal track advance
+                $nextIndex = ($currentIndex < $trackCount - 1) ? $currentIndex + 1 : 0;
+                $nextTrack = $shuffledTracks->get($nextIndex);
+
+                $assignment->update([
+                    'campaign_track_id' => $nextTrack->id,
+                    'shuffled_index'    => $nextIndex,
+                    'cycle_track_count' => $cycleCount + 1,
+                    'is_interstitial'   => false,
+                    'media_url'         => $nextTrack->media_url,
+                    'media_title'       => $nextTrack->media_title ?? $campaign->name . ' - ' . $nextTrack->media_url,
+                    'started_at'        => now(),
+                    'status'            => 'playing',
+                ]);
+
+                try {
+                    $command = $assignment->platform === 'spotify' ? 'play_spotify' : ($assignment->platform === 'apple_music' ? 'play_applemusic' : 'play_youtube');
+                    $message = CloudMessage::withTarget('token', $device->fcm_token)
+                        ->withData([
+                            'command'       => $command,
+                            'track_id'      => $nextTrack->media_url,
+                            'youtube_url'   => $nextTrack->media_url,
+                            'media_url'     => $nextTrack->media_url,
+                            'action'        => 'play',
+                            'platform'      => $assignment->platform,
+                            'assignment_id' => (string) $assignment->id,
+                            'timestamp'     => (string) now()->timestamp,
+                            'command_id'    => Str::uuid()->toString(),
+                        ])
+                        ->withAndroidConfig(['priority' => 'high']);
+
+                    $this->messaging->send($message);
+                    return response()->json(['success' => true, 'message' => 'Next track sent']);
                 } catch (\Exception $e) {
                     $assignment->update(['status' => 'failed']);
                     return response()->json(['success' => false, 'message' => $e->getMessage()]);
                 }
             }
         }
-        
+
         $assignment->update(['status' => 'completed']);
         $device->update(['status' => 'online']);
-        
+
         try {
             $message = CloudMessage::withTarget('token', $device->fcm_token)
                 ->withData(['command' => 'stop', 'action' => 'stop', 'assignment_id' => (string) $assignment->id])

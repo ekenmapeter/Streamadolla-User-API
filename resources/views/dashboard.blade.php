@@ -704,6 +704,49 @@
                                 </div>
                             </div>
 
+                            <!-- Channel URL (shown for YouTube) -->
+                            <div id="campaign-channel-url-group" class="mb-4 hidden">
+                                <label class="block text-sm font-medium text-gray-700 mb-2"><i
+                                        class="fab fa-youtube mr-2 text-red-500"></i>YouTube Channel URL</label>
+                                <input type="text" id="campaign_channel_url"
+                                    placeholder="https://www.youtube.com/@ChannelName"
+                                    class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 smooth-transition">
+                                <p class="text-xs text-gray-400 mt-1">Add channel URL to mark tracks as channel/similar videos</p>
+                            </div>
+
+                            <!-- Interstitial Settings -->
+                            <div class="mb-4 p-4 bg-amber-50 rounded-xl border border-amber-200">
+                                <div class="flex items-center justify-between mb-3">
+                                    <label class="block text-sm font-medium text-amber-800"><i
+                                            class="fas fa-random mr-2 text-amber-600"></i>Interstitial Content</label>
+                                    <label class="flex items-center text-xs text-amber-700 cursor-pointer">
+                                        <input type="checkbox" id="campaign_interstitial_enabled" class="h-4 w-4 text-amber-600 rounded border-amber-300 mr-1">
+                                        <span>Enabled</span>
+                                    </label>
+                                </div>
+                                <div id="campaign-interstitial-fields" class="space-y-3 hidden">
+                                    <div>
+                                        <label class="block text-xs font-medium text-amber-700 mb-1">Play interstitial after every</label>
+                                        <div class="flex items-center space-x-2">
+                                            <input type="number" id="campaign_interstitial_every" value="5" min="1" max="100"
+                                                class="w-20 p-2.5 border border-amber-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-amber-500">
+                                            <span class="text-xs text-amber-600">playlist tracks</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-amber-700 mb-1">Interstitial Media URL</label>
+                                        <input type="text" id="campaign_interstitial_media_url"
+                                            placeholder="spotify:track:xxx or YouTube URL"
+                                            class="w-full p-2.5 border border-amber-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-amber-700 mb-1">Interstitial Duration (seconds)</label>
+                                        <input type="number" id="campaign_interstitial_duration" value="120" min="30" max="7200"
+                                            class="w-20 p-2.5 border border-amber-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-amber-500">
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Tracks -->
                             <div class="mb-4">
                                 <div class="flex items-center justify-between mb-2">
@@ -717,18 +760,22 @@
                                     class="space-y-2 max-h-[300px] overflow-y-auto pr-1">
                                     <div class="campaign-track-row flex items-center space-x-2">
                                         <span class="text-xs text-gray-400 font-bold w-5 flex-shrink-0">1</span>
-                                        <input type="text" placeholder="spotify:track:xxx or YouTube URL"
+                                        <input type="text" placeholder="URL"
                                             class="campaign-track-url flex-1 p-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500">
-                                        <input type="text" placeholder="Title (optional)"
-                                            class="campaign-track-title w-28 p-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500">
+                                        <input type="text" placeholder="Title"
+                                            class="campaign-track-title w-24 p-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500">
                                         <input type="number" placeholder="180" value="180" min="30"
                                             max="7200"
                                             class="campaign-track-duration w-16 p-2.5 border border-gray-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-emerald-500"
                                             title="Duration in seconds">
+                                        <select class="campaign-track-type w-20 p-2.5 border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 bg-white" title="Track type">
+                                            <option value="playlist">Playlist</option>
+                                            <option value="channel_video">Channel</option>
+                                            <option value="similar_video">Similar</option>
+                                        </select>
                                     </div>
                                 </div>
-                                <p class="text-xs text-gray-400 mt-2">Duration = how many seconds per track before
-                                    switching to next</p>
+                                <p class="text-xs text-gray-400 mt-2">Duration = seconds per track. Track type: Playlist (normal), Channel (from your channel), Similar (other creators)</p>
                             </div>
 
                             <button type="button" id="createCampaignBtn"
@@ -765,17 +812,27 @@
                                                     <p class="text-xs text-gray-400 mt-1">
                                                         {{ $campaign->tracks->count() }}
                                                         tracks &bull; {{ $campaign->assignments_count ?? 0 }}
-                                                        assignments</p>
-                                                </div>
+                                                        assignments
+                                                        @if ($campaign->interstitial_every)
+                                                            &bull; <span class="text-amber-600 font-medium">Interstitial every {{ $campaign->interstitial_every }} tracks</span>
+                                                        @endif
+                                                        @if ($campaign->channel_url)
+                                                            &bull; <span class="text-red-500"><i class="fab fa-youtube mr-1"></i>Channel</span>
+                                                        @endif
+                                                    </p>
                                                 <div class="flex space-x-2">
                                                     <button
-                                                        class="edit-campaign px-3 py-1.5 bg-amber-50 text-amber-600 text-xs rounded-lg hover:bg-amber-100 smooth-transition font-medium"
-                                                        data-campaign-id="{{ $campaign->id }}"
-                                                        data-campaign-name="{{ $campaign->name }}"
-                                                        data-campaign-platform="{{ $campaign->platform }}"
-                                                        data-tracks="{{ json_encode($campaign->tracks) }}">
-                                                        <i class="fas fa-edit mr-1"></i>Edit
-                                                    </button>
+                                                         class="edit-campaign px-3 py-1.5 bg-amber-50 text-amber-600 text-xs rounded-lg hover:bg-amber-100 smooth-transition font-medium"
+                                                         data-campaign-id="{{ $campaign->id }}"
+                                                         data-campaign-name="{{ $campaign->name }}"
+                                                         data-campaign-platform="{{ $campaign->platform }}"
+                                                         data-channel-url="{{ $campaign->channel_url ?? '' }}"
+                                                         data-interstitial-every="{{ $campaign->interstitial_every ?? '' }}"
+                                                         data-interstitial-media-url="{{ $campaign->interstitial_media_url ?? '' }}"
+                                                         data-interstitial-duration="{{ $campaign->interstitial_duration_seconds ?? 120 }}"
+                                                         data-tracks="{{ json_encode($campaign->tracks) }}">
+                                                         <i class="fas fa-edit mr-1"></i>Edit
+                                                     </button>
                                                     <button
                                                         class="deploy-campaign px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-green-500 text-white text-xs rounded-lg hover:from-emerald-600 hover:to-green-600 smooth-transition font-medium"
                                                         data-campaign-id="{{ $campaign->id }}"
@@ -796,9 +853,18 @@
                                                         <div class="flex items-center text-sm">
                                                             <span
                                                                 class="text-xs font-bold text-gray-400 w-5">{{ $loop->iteration }}</span>
-                                                            <i class="fas fa-music text-gray-300 text-xs mr-2"></i>
+                                                            @if ($track->track_type === 'channel_video')
+                                                                <i class="fab fa-youtube text-red-400 text-xs mr-2"></i>
+                                                            @elseif ($track->track_type === 'similar_video')
+                                                                <i class="fas fa-users text-purple-400 text-xs mr-2"></i>
+                                                            @else
+                                                                <i class="fas fa-music text-gray-300 text-xs mr-2"></i>
+                                                            @endif
                                                             <span
                                                                 class="text-gray-700 flex-1 truncate">{{ $track->media_title ?? Str::limit($track->media_url, 40) }}</span>
+                                                            @if ($track->track_type !== 'playlist')
+                                                                <span class="text-xs {{ $track->track_type === 'channel_video' ? 'text-red-400' : 'text-purple-400' }} mr-1 font-medium">{{ $track->track_type === 'channel_video' ? 'CH' : 'SIM' }}</span>
+                                                            @endif
                                                             <span
                                                                 class="text-xs text-gray-400 ml-2">{{ gmdate('i:s', $track->duration_seconds) }}</span>
                                                         </div>

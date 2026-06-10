@@ -17,10 +17,6 @@ class CampaignController extends Controller
     {
     }
 
-    /**
-     * List all campaigns.
-     * GET /api/campaigns
-     */
     public function index()
     {
         $campaigns = Campaign::with('tracks')->withCount('assignments')->get();
@@ -31,10 +27,6 @@ class CampaignController extends Controller
         ]);
     }
 
-    /**
-     * Create a new campaign with tracks.
-     * POST /api/campaigns
-     */
     public function store(Request $request)
     {
         $request->validate([
@@ -44,11 +36,20 @@ class CampaignController extends Controller
             'tracks.*.media_url'          => 'required|string',
             'tracks.*.media_title'        => 'nullable|string|max:255',
             'tracks.*.duration_seconds'   => 'nullable|integer|min:30|max:7200',
+            'tracks.*.track_type'         => 'nullable|in:playlist,channel_video,similar_video',
+            'channel_url'                 => 'nullable|string|max:500',
+            'interstitial_every'          => 'nullable|integer|min:1|max:100',
+            'interstitial_media_url'      => 'nullable|string|max:500',
+            'interstitial_duration_seconds' => 'nullable|integer|min:30|max:7200',
         ]);
 
         $campaign = Campaign::create([
-            'name'     => $request->name,
-            'platform' => $request->platform,
+            'name'                       => $request->name,
+            'platform'                   => $request->platform,
+            'channel_url'                => $request->channel_url,
+            'interstitial_every'         => $request->interstitial_every,
+            'interstitial_media_url'     => $request->interstitial_media_url,
+            'interstitial_duration_seconds' => $request->interstitial_duration_seconds ?? 120,
         ]);
 
         foreach ($request->tracks as $i => $trackData) {
@@ -58,6 +59,7 @@ class CampaignController extends Controller
                 'media_title'      => $trackData['media_title'] ?? null,
                 'position_order'   => $i,
                 'duration_seconds' => $trackData['duration_seconds'] ?? 180,
+                'track_type'       => $trackData['track_type'] ?? 'playlist',
             ]);
         }
 
@@ -68,10 +70,6 @@ class CampaignController extends Controller
         ]);
     }
 
-    /**
-     * Update a campaign (name, tracks).
-     * PUT /api/campaigns/{campaign}
-     */
     public function update(Request $request, Campaign $campaign)
     {
         $request->validate([
@@ -81,6 +79,11 @@ class CampaignController extends Controller
             'tracks.*.media_url'          => 'required_with:tracks|string',
             'tracks.*.media_title'        => 'nullable|string|max:255',
             'tracks.*.duration_seconds'   => 'nullable|integer|min:30|max:7200',
+            'tracks.*.track_type'         => 'nullable|in:playlist,channel_video,similar_video',
+            'channel_url'                 => 'nullable|string|max:500',
+            'interstitial_every'          => 'nullable|integer|min:1|max:100',
+            'interstitial_media_url'      => 'nullable|string|max:500',
+            'interstitial_duration_seconds' => 'nullable|integer|min:30|max:7200',
         ]);
 
         if ($request->has('name')) {
@@ -88,6 +91,18 @@ class CampaignController extends Controller
         }
         if ($request->has('platform')) {
             $campaign->platform = $request->platform;
+        }
+        if ($request->has('channel_url')) {
+            $campaign->channel_url = $request->channel_url;
+        }
+        if ($request->has('interstitial_every')) {
+            $campaign->interstitial_every = $request->interstitial_every;
+        }
+        if ($request->has('interstitial_media_url')) {
+            $campaign->interstitial_media_url = $request->interstitial_media_url;
+        }
+        if ($request->has('interstitial_duration_seconds')) {
+            $campaign->interstitial_duration_seconds = $request->interstitial_duration_seconds;
         }
         $campaign->save();
 
@@ -101,6 +116,7 @@ class CampaignController extends Controller
                     'media_title'      => $trackData['media_title'] ?? null,
                     'position_order'   => $i,
                     'duration_seconds' => $trackData['duration_seconds'] ?? 180,
+                    'track_type'       => $trackData['track_type'] ?? 'playlist',
                 ]);
             }
         }
@@ -112,13 +128,8 @@ class CampaignController extends Controller
         ]);
     }
 
-    /**
-     * Delete a campaign. Stops all active assignments for it first.
-     * DELETE /api/campaigns/{campaign}
-     */
     public function destroy(Campaign $campaign)
     {
-        // Stop all active assignments for this campaign
         DeviceAssignment::where('campaign_id', $campaign->id)
             ->whereIn('status', ['pending', 'playing', 'paused'])
             ->update(['status' => 'stopped']);
@@ -131,12 +142,6 @@ class CampaignController extends Controller
         ]);
     }
 
-    /**
-     * Deploy a campaign to selected devices.
-     * POST /api/campaigns/{campaign}/deploy
-     *
-     * Body: { "device_ids": [1, 2, 3] }
-     */
     public function deploy(Request $request, Campaign $campaign)
     {
         $request->validate([
@@ -156,11 +161,8 @@ class CampaignController extends Controller
         $assignments = [];
 
         $deviceIds = $request->device_ids;
-        $deviceCount = count($deviceIds);
-        $trackCount = $tracks->count();
-        $baseItemsPerDevice = floor($trackCount / $deviceCount);
 
-        foreach ($deviceIds as $index => $deviceId) {
+        foreach ($deviceIds as $deviceId) {
             $device = Device::find($deviceId);
             if (!$device || !$device->fcm_token) continue;
 
@@ -169,18 +171,28 @@ class CampaignController extends Controller
                 ->whereIn('status', ['pending', 'playing', 'paused'])
                 ->update(['status' => 'stopped']);
 
-            $firstTrack = $tracks->first();
-            
+            // Compute per-device deterministic shuffle (same seed formula as ExecuteCampaigns)
+            $assignedAt = now();
+            $seed = "{$device->id}_{$campaign->id}_" . (int)$assignedAt->timestamp;
+            $shuffledTracks = $tracks->sortBy(fn($t) => md5($seed . $t->id))->values();
+
+            // Pick random starting track for each device
+            $startIndex = abs(crc32($seed . '_start')) % $shuffledTracks->count();
+            $firstTrack = $shuffledTracks[$startIndex];
+
             // Create assignment
             $assignment = DeviceAssignment::create([
                 'device_id'         => $device->id,
                 'campaign_id'       => $campaign->id,
                 'campaign_track_id' => $firstTrack->id,
+                'shuffled_index'    => $startIndex,
+                'cycle_track_count' => 0,
+                'is_interstitial'   => false,
                 'platform'          => $campaign->platform,
                 'media_url'         => $firstTrack->media_url,
                 'media_title'       => $firstTrack->media_title ?? $campaign->name . ' - ' . $firstTrack->media_url,
                 'status'            => 'pending',
-                'assigned_at'       => now(),
+                'assigned_at'       => $assignedAt,
             ]);
 
             // Send FCM to start playing first track
@@ -195,7 +207,7 @@ class CampaignController extends Controller
                         'track_id'      => $firstTrack->media_url,
                         'youtube_url'   => $firstTrack->media_url,
                         'media_url'     => $firstTrack->media_url,
-                        'proxy_url'     => (string)($device->proxy_url ?? ''), // Automated proxy setup
+                        'proxy_url'     => (string)($device->proxy_url ?? ''),
                         'action'        => 'play',
                         'platform'      => $campaign->platform,
                         'assignment_id' => (string) $assignment->id,

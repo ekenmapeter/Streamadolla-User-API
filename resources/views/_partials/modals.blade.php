@@ -170,6 +170,40 @@
                 </div>
             </div>
 
+            <!-- Edit: Channel URL -->
+            <div id="edit-campaign-channel-url-group" class="mb-4 hidden">
+                <label class="block text-sm font-medium text-gray-700 mb-2"><i class="fab fa-youtube mr-2 text-red-500"></i>YouTube Channel URL</label>
+                <input type="text" id="edit_campaign_channel_url" placeholder="https://www.youtube.com/@ChannelName" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500">
+            </div>
+
+            <!-- Edit: Interstitial Settings -->
+            <div class="mb-4 p-4 bg-amber-50 rounded-xl border border-amber-200">
+                <div class="flex items-center justify-between mb-3">
+                    <label class="block text-sm font-medium text-amber-800"><i class="fas fa-random mr-2 text-amber-600"></i>Interstitial Content</label>
+                    <label class="flex items-center text-xs text-amber-700 cursor-pointer">
+                        <input type="checkbox" id="edit_campaign_interstitial_enabled" class="h-4 w-4 text-amber-600 rounded border-amber-300 mr-1">
+                        <span>Enabled</span>
+                    </label>
+                </div>
+                <div id="edit-campaign-interstitial-fields" class="space-y-3 hidden">
+                    <div>
+                        <label class="block text-xs font-medium text-amber-700 mb-1">Play interstitial after every</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="number" id="edit_campaign_interstitial_every" value="5" min="1" max="100" class="w-20 p-2.5 border border-amber-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-amber-500">
+                            <span class="text-xs text-amber-600">playlist tracks</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-amber-700 mb-1">Interstitial Media URL</label>
+                        <input type="text" id="edit_campaign_interstitial_media_url" placeholder="spotify:track:xxx or YouTube URL" class="w-full p-2.5 border border-amber-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-amber-700 mb-1">Interstitial Duration (seconds)</label>
+                        <input type="number" id="edit_campaign_interstitial_duration" value="120" min="30" max="7200" class="w-20 p-2.5 border border-amber-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-amber-500">
+                    </div>
+                </div>
+            </div>
+
             <!-- Tracks -->
             <div class="mb-4">
                 <div class="flex items-center justify-between mb-2">

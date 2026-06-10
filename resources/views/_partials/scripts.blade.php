@@ -231,7 +231,22 @@ document.addEventListener('DOMContentLoaded', function() {
             this.classList.add('border-emerald-500','bg-emerald-50');
             this.classList.remove('border-gray-200');
             this.querySelector('input').checked = true;
+            // Show channel URL field only for YouTube
+            const isYoutube = this.dataset.platform === 'youtube';
+            document.getElementById('campaign-channel-url-group').classList.toggle('hidden', !isYoutube);
         });
+    });
+    // Show/hide channel URL on page load based on initial platform selection
+    document.addEventListener('DOMContentLoaded', function() {
+        const initialPlatform = document.querySelector('input[name="campaign_platform"]:checked');
+        if (initialPlatform) {
+            document.getElementById('campaign-channel-url-group').classList.toggle('hidden', initialPlatform.value !== 'youtube');
+        }
+    });
+
+    // ── Campaign: Interstitial Toggle ────────────────────────────────────
+    document.getElementById('campaign_interstitial_enabled')?.addEventListener('change', function() {
+        document.getElementById('campaign-interstitial-fields').classList.toggle('hidden', !this.checked);
     });
 
     // ── Campaign: Add Track Row ──────────────────────────────────────────
@@ -243,9 +258,14 @@ document.addEventListener('DOMContentLoaded', function() {
         row.className = 'campaign-track-row flex items-center space-x-2';
         row.innerHTML = `
             <span class="text-xs text-gray-400 font-bold w-5 flex-shrink-0">${trackCount}</span>
-            <input type="text" placeholder="spotify:track:xxx or YouTube URL" class="campaign-track-url flex-1 p-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500">
-            <input type="text" placeholder="Title" class="campaign-track-title w-28 p-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500">
+            <input type="text" placeholder="URL" class="campaign-track-url flex-1 p-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500">
+            <input type="text" placeholder="Title" class="campaign-track-title w-24 p-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500">
             <input type="number" placeholder="180" value="180" min="30" max="7200" class="campaign-track-duration w-16 p-2.5 border border-gray-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-emerald-500" title="Duration in seconds">
+            <select class="campaign-track-type w-20 p-2.5 border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 bg-white" title="Track type">
+                <option value="playlist">Playlist</option>
+                <option value="channel_video">Channel</option>
+                <option value="similar_video">Similar</option>
+            </select>
             <button type="button" class="remove-track-btn text-red-400 hover:text-red-600 flex-shrink-0"><i class="fas fa-times"></i></button>
         `;
         container.appendChild(row);
@@ -263,16 +283,32 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('createCampaignBtn')?.addEventListener('click', function() {
         const name = document.getElementById('campaign_name').value.trim();
         const platform = document.querySelector('input[name="campaign_platform"]:checked')?.value || 'spotify';
+        const channelUrl = document.getElementById('campaign_channel_url')?.value.trim() || null;
 
         if (!name) { showNotification('Please enter a campaign name', 'error'); return; }
+
+        const interstitialEnabled = document.getElementById('campaign_interstitial_enabled')?.checked || false;
+        let interstitialEvery = null;
+        let interstitialMediaUrl = null;
+        let interstitialDuration = 120;
+        if (interstitialEnabled) {
+            interstitialEvery = parseInt(document.getElementById('campaign_interstitial_every')?.value) || 5;
+            interstitialMediaUrl = document.getElementById('campaign_interstitial_media_url')?.value.trim() || null;
+            interstitialDuration = parseInt(document.getElementById('campaign_interstitial_duration')?.value) || 120;
+            if (!interstitialMediaUrl) {
+                showNotification('Enter an interstitial media URL or disable interstitial', 'error');
+                return;
+            }
+        }
 
         const tracks = [];
         document.querySelectorAll('.campaign-track-row').forEach(row => {
             const url = row.querySelector('.campaign-track-url').value.trim();
             const title = row.querySelector('.campaign-track-title').value.trim();
             const duration = parseInt(row.querySelector('.campaign-track-duration').value) || 180;
+            const trackType = row.querySelector('.campaign-track-type')?.value || 'playlist';
             if (url) {
-                tracks.push({ media_url: url, media_title: title || null, duration_seconds: duration });
+                tracks.push({ media_url: url, media_title: title || null, duration_seconds: duration, track_type: trackType });
             }
         });
 
@@ -283,7 +319,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         fetch('/api/campaigns', {
             method: 'POST', headers: headers,
-            body: JSON.stringify({ name, platform, tracks })
+            body: JSON.stringify({ name, platform, tracks, channel_url: channelUrl, interstitial_every: interstitialEvery, interstitial_media_url: interstitialMediaUrl, interstitial_duration_seconds: interstitialDuration })
         })
         .then(r => r.json())
         .then(data => {
@@ -378,9 +414,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const name = this.dataset.campaignName;
             const platform = this.dataset.campaignPlatform;
             const tracks = JSON.parse(this.dataset.tracks || '[]');
+            const channelUrl = this.dataset.channelUrl || '';
+            const interstitialEvery = this.dataset.interstitialEvery ? parseInt(this.dataset.interstitialEvery) : null;
+            const interstitialMediaUrl = this.dataset.interstitialMediaUrl || '';
+            const interstitialDuration = this.dataset.interstitialDuration ? parseInt(this.dataset.interstitialDuration) : 120;
 
             document.getElementById('edit_campaign_id').value = id;
             document.getElementById('edit_campaign_name').value = name;
+            document.getElementById('edit_campaign_channel_url').value = channelUrl;
             
             // Set platform
             document.querySelectorAll('.edit-campaign-platform-btn').forEach(b => {
@@ -390,12 +431,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 b.classList.toggle('border-gray-200', !isSelected);
                 b.querySelector('input').checked = isSelected;
             });
+            document.getElementById('edit-campaign-channel-url-group').classList.toggle('hidden', platform !== 'youtube');
+
+            // Set interstitial fields
+            const interstitialCheckbox = document.getElementById('edit_campaign_interstitial_enabled');
+            if (interstitialEvery && interstitialMediaUrl) {
+                interstitialCheckbox.checked = true;
+                document.getElementById('edit-campaign-interstitial-fields').classList.remove('hidden');
+                document.getElementById('edit_campaign_interstitial_every').value = interstitialEvery;
+                document.getElementById('edit_campaign_interstitial_media_url').value = interstitialMediaUrl;
+                document.getElementById('edit_campaign_interstitial_duration').value = interstitialDuration;
+            } else {
+                interstitialCheckbox.checked = false;
+                document.getElementById('edit-campaign-interstitial-fields').classList.add('hidden');
+                document.getElementById('edit_campaign_interstitial_every').value = 5;
+                document.getElementById('edit_campaign_interstitial_media_url').value = '';
+                document.getElementById('edit_campaign_interstitial_duration').value = 120;
+            }
 
             // Populate tracks
             const container = document.getElementById('editCampaignTracksContainer');
             container.innerHTML = '';
             tracks.forEach((track, i) => {
-                addEditTrackRow(track.media_url, track.media_title, track.duration_seconds, i + 1);
+                addEditTrackRow(track.media_url, track.media_title, track.duration_seconds, track.track_type || 'playlist', i + 1);
             });
 
             document.getElementById('editCampaignModal').classList.remove('hidden');
@@ -412,25 +470,36 @@ document.addEventListener('DOMContentLoaded', function() {
             this.classList.add('border-amber-500','bg-amber-50');
             this.classList.remove('border-gray-200');
             this.querySelector('input').checked = true;
+            const isYoutube = this.dataset.platform === 'youtube';
+            document.getElementById('edit-campaign-channel-url-group').classList.toggle('hidden', !isYoutube);
         });
     });
 
-    function addEditTrackRow(url = '', title = '', duration = 180, index = null) {
+    // Edit interstitial toggle
+    document.getElementById('edit_campaign_interstitial_enabled')?.addEventListener('change', function() {
+        document.getElementById('edit-campaign-interstitial-fields').classList.toggle('hidden', !this.checked);
+    });
+
+    function addEditTrackRow(url = '', title = '', duration = 180, trackType = 'playlist', index = null) {
         const container = document.getElementById('editCampaignTracksContainer');
         const count = index || (container.querySelectorAll('.edit-track-row').length + 1);
         const row = document.createElement('div');
         row.className = 'edit-track-row flex items-center space-x-2';
         row.innerHTML = `
             <span class="text-xs text-gray-400 font-bold w-5 flex-shrink-0">${count}</span>
-            <input type="text" placeholder="URL/URI" value="${url}" class="edit-track-url flex-1 p-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500">
-            <input type="text" placeholder="Title" value="${title || ''}" class="edit-track-title w-28 p-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500">
+            <input type="text" placeholder="URL" value="${url}" class="edit-track-url flex-1 p-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500">
+            <input type="text" placeholder="Title" value="${title || ''}" class="edit-track-title w-24 p-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500">
             <input type="number" value="${duration}" min="30" max="7200" class="edit-track-duration w-16 p-2.5 border border-gray-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-amber-500">
+            <select class="edit-track-type w-20 p-2.5 border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-amber-500 bg-white">
+                <option value="playlist" ${trackType === 'playlist' ? 'selected' : ''}>Playlist</option>
+                <option value="channel_video" ${trackType === 'channel_video' ? 'selected' : ''}>Channel</option>
+                <option value="similar_video" ${trackType === 'similar_video' ? 'selected' : ''}>Similar</option>
+            </select>
             <button type="button" class="remove-edit-track-btn text-red-400 hover:text-red-600"><i class="fas fa-times"></i></button>
         `;
         container.appendChild(row);
         row.querySelector('.remove-edit-track-btn').addEventListener('click', () => { 
             row.remove(); 
-            // Renumber
             document.querySelectorAll('.edit-track-row').forEach((r, idx) => r.querySelector('span').textContent = idx + 1);
         });
     }
@@ -442,15 +511,31 @@ document.addEventListener('DOMContentLoaded', function() {
         const id = document.getElementById('edit_campaign_id').value;
         const name = document.getElementById('edit_campaign_name').value.trim();
         const platform = document.querySelector('input[name="edit_campaign_platform"]:checked')?.value;
+        const channelUrl = document.getElementById('edit_campaign_channel_url')?.value.trim() || null;
 
         if (!name) { showNotification('Name is required', 'error'); return; }
+
+        const interstitialEnabled = document.getElementById('edit_campaign_interstitial_enabled')?.checked || false;
+        let interstitialEvery = null;
+        let interstitialMediaUrl = null;
+        let interstitialDuration = 120;
+        if (interstitialEnabled) {
+            interstitialEvery = parseInt(document.getElementById('edit_campaign_interstitial_every')?.value) || 5;
+            interstitialMediaUrl = document.getElementById('edit_campaign_interstitial_media_url')?.value.trim() || null;
+            interstitialDuration = parseInt(document.getElementById('edit_campaign_interstitial_duration')?.value) || 120;
+            if (!interstitialMediaUrl) {
+                showNotification('Enter an interstitial media URL or disable interstitial', 'error');
+                return;
+            }
+        }
 
         const tracks = [];
         document.querySelectorAll('.edit-track-row').forEach(row => {
             const url = row.querySelector('.edit-track-url').value.trim();
             const title = row.querySelector('.edit-track-title').value.trim();
             const duration = parseInt(row.querySelector('.edit-track-duration').value) || 180;
-            if (url) tracks.push({ media_url: url, media_title: title || null, duration_seconds: duration });
+            const trackType = row.querySelector('.edit-track-type')?.value || 'playlist';
+            if (url) tracks.push({ media_url: url, media_title: title || null, duration_seconds: duration, track_type: trackType });
         });
 
         if (tracks.length === 0) { showNotification('Add at least one track', 'error'); return; }
@@ -460,7 +545,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         fetch(`/api/campaigns/${id}`, {
             method: 'PUT', headers: headers,
-            body: JSON.stringify({ name, platform, tracks })
+            body: JSON.stringify({ name, platform, tracks, channel_url: channelUrl, interstitial_every: interstitialEvery, interstitial_media_url: interstitialMediaUrl, interstitial_duration_seconds: interstitialDuration })
         })
         .then(r => r.json())
         .then(data => {

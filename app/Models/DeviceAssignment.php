@@ -12,6 +12,9 @@ class DeviceAssignment extends Model
         'campaign_track_id',
         'subset_start_index',
         'subset_end_index',
+        'shuffled_index',
+        'cycle_track_count',
+        'is_interstitial',
         'platform',
         'media_url',
         'media_title',
@@ -21,8 +24,9 @@ class DeviceAssignment extends Model
     ];
 
     protected $casts = [
-        'assigned_at' => 'datetime',
-        'started_at'  => 'datetime',
+        'assigned_at'    => 'datetime',
+        'started_at'     => 'datetime',
+        'is_interstitial' => 'boolean',
     ];
 
     // ── Relationships ────────────────────────────────────────────────────
