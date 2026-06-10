@@ -847,8 +847,14 @@
                                                     </button>
                                                 </div>
                                             </div>
-                                            <!-- Track List -->
-                                            <div class="bg-gray-50 rounded-lg p-3">
+                                            <!-- Track List Toggle -->
+                                            <button type="button"
+                                                class="toggle-tracks w-full text-left flex items-center justify-between px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg smooth-transition text-xs text-gray-500 font-medium"
+                                                data-target="tracks-{{ $campaign->id }}">
+                                                <span><i class="fas fa-music mr-1.5"></i>{{ $campaign->tracks->count() }} track(s)</span>
+                                                <i class="fas fa-chevron-down text-gray-400 transition-transform duration-200"></i>
+                                            </button>
+                                            <div id="tracks-{{ $campaign->id }}" class="bg-gray-50 rounded-lg p-3 mt-2 hidden">
                                                 <div class="space-y-1.5">
                                                     @foreach ($campaign->tracks as $track)
                                                         <div class="flex items-center text-sm">

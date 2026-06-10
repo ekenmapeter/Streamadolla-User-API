@@ -3,6 +3,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
     const headers = {'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN': csrfToken};
 
+    // ── Track List Toggle ────────────────────────────────────────────────
+    document.addEventListener('click', function(e) {
+        const toggle = e.target.closest('.toggle-tracks');
+        if (!toggle) return;
+        const targetId = toggle.dataset.target;
+        const list = document.getElementById(targetId);
+        const chevron = toggle.querySelector('.fa-chevron-down');
+        if (list) {
+            list.classList.toggle('hidden');
+            if (chevron) chevron.style.transform = list.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+        }
+    });
+
     // ── Tab Switching ────────────────────────────────────────────────────
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', function() {
