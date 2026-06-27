@@ -25,8 +25,8 @@
     class="bg-gradient-to-br from-blue-600 via-primary-600 to-indigo-800 min-h-screen flex items-center justify-center p-4">
     <div class="max-w-md w-full">
         <div class="text-center mb-10">
-            <div class="inline-flex items-center justify-center h-20 w-20 rounded-2xl bg-white shadow-2xl mb-6">
-                <i class="fas fa-satellite-dish text-blue-600 text-4xl"></i>
+            <div class="inline-flex items-center justify-center h-20 w-20 rounded-2xl bg-white shadow-2xl mb-6 p-3">
+                <img src="{{ asset('images/new_logo.png') }}" alt="Stream Farm" class="h-full w-full object-contain">
             </div>
             <h1 class="text-4xl font-bold text-white mb-2">Stream Farm</h1>
             <p class="text-blue-100 opacity-80">Admin Control Center</p>

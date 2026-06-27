@@ -39,6 +39,9 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('assign-spotify-group').classList.toggle('hidden', p !== 'spotify');
             document.getElementById('assign-youtube-group').classList.toggle('hidden', p !== 'youtube');
             document.getElementById('assign-apple_music-group').classList.toggle('hidden', p !== 'apple_music');
+            document.getElementById('assign-tidal-group').classList.toggle('hidden', p !== 'tidal');
+            document.getElementById('assign-iheart-group').classList.toggle('hidden', p !== 'iheart');
+            document.getElementById('assign-audiomack-group').classList.toggle('hidden', p !== 'audiomack');
         });
     });
 
@@ -73,7 +76,13 @@ document.addEventListener('DOMContentLoaded', function() {
             ? document.getElementById('assign_media_spotify').value
             : (platform === 'apple_music'
                 ? document.getElementById('assign_media_apple_music').value
-                : document.getElementById('assign_media_youtube').value);
+                : (platform === 'tidal'
+                    ? document.getElementById('assign_media_tidal').value
+                    : (platform === 'iheart'
+                        ? document.getElementById('assign_media_iheart').value
+                        : (platform === 'audiomack'
+                            ? document.getElementById('assign_media_audiomack').value
+                            : document.getElementById('assign_media_youtube').value))));
         if (!url) { e.preventDefault(); showNotification('Please enter a media URL/URI', 'error'); return; }
         document.getElementById('assign_media_url').value = url;
     });
@@ -91,6 +100,9 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('bcast-spotify-group').classList.toggle('hidden', p !== 'spotify');
             document.getElementById('bcast-youtube-group').classList.toggle('hidden', p !== 'youtube');
             document.getElementById('bcast-apple_music-group').classList.toggle('hidden', p !== 'apple_music');
+            document.getElementById('bcast-tidal-group').classList.toggle('hidden', p !== 'tidal');
+            document.getElementById('bcast-iheart-group').classList.toggle('hidden', p !== 'iheart');
+            document.getElementById('bcast-audiomack-group').classList.toggle('hidden', p !== 'audiomack');
         });
     });
 
@@ -107,6 +119,9 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('modal-spotify-group').classList.toggle('hidden', p !== 'spotify');
             document.getElementById('modal-youtube-group').classList.toggle('hidden', p !== 'youtube');
             document.getElementById('modal-apple_music-group').classList.toggle('hidden', p !== 'apple_music');
+            document.getElementById('modal-tidal-group').classList.toggle('hidden', p !== 'tidal');
+            document.getElementById('modal-iheart-group').classList.toggle('hidden', p !== 'iheart');
+            document.getElementById('modal-audiomack-group').classList.toggle('hidden', p !== 'audiomack');
             this.querySelector('input').checked = true;
         });
     });
@@ -127,7 +142,13 @@ document.addEventListener('DOMContentLoaded', function() {
             ? document.getElementById('modal_spotify_uri').value
             : (platform === 'apple_music'
                 ? document.getElementById('modal_apple_music_url').value
-                : document.getElementById('modal_youtube_url').value);
+                : (platform === 'tidal'
+                    ? document.getElementById('modal_tidal_url').value
+                    : (platform === 'iheart'
+                        ? document.getElementById('modal_iheart_url').value
+                        : (platform === 'audiomack'
+                            ? document.getElementById('modal_audiomack_url').value
+                            : document.getElementById('modal_youtube_url').value))));
         const title = document.getElementById('modal_media_title')?.value || '';
 
         if (!uri) { showNotification('Please enter a URL/URI', 'error'); return; }
@@ -741,8 +762,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         let html = '<div class="space-y-3 max-h-[400px] overflow-y-auto pr-1">';
                         data.activeAssignments.forEach(a => {
                             const platform = a.platform || 'youtube';
-                            const pIcon = platform === 'spotify' ? 'text-green-500' : (platform === 'apple_music' ? 'text-red-600' : 'text-red-500');
-                            const brandIcon = platform === 'apple_music' ? 'apple' : platform;
+                            const pIcon = platform === 'spotify' ? 'text-green-500' : (platform === 'apple_music' ? 'text-red-600' : (platform === 'tidal' ? 'text-cyan-500' : (platform === 'iheart' ? 'text-pink-500' : (platform === 'audiomack' ? 'text-yellow-600' : 'text-red-500'))));
+                            const brandIcon = platform === 'apple_music' ? 'apple' : (platform === 'tidal' ? 'water' : (platform === 'iheart' ? 'heart' : (platform === 'audiomack' ? 'headphones' : platform)));
+                            const iconPrefix = platform === 'tidal' || platform === 'iheart' || platform === 'audiomack' ? 'fas' : 'fab';
                             const sColor = statusColors[a.status] || 'bg-gray-100 text-gray-700';
                             const title = a.media_title || 'Untitled';
                             const deviceName = (a.device && a.device.name) ? a.device.name : 'Unknown Device';
@@ -752,7 +774,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             html += `<div class="p-3 border border-gray-200 rounded-xl smooth-transition hover:shadow-sm" data-assignment-id="${a.id}">`;
                             html += `<div class="flex items-start justify-between mb-2">`;
                             html += `<div class="flex items-center min-w-0">`;
-                            html += `<i class="fab fa-${brandIcon} ${pIcon} text-lg mr-2 flex-shrink-0"></i>`;
+                            html += `<i class="${iconPrefix} fa-${brandIcon} ${pIcon} text-lg mr-2 flex-shrink-0"></i>`;
                             html += `<div class="min-w-0">`;
                             html += `<p class="font-medium text-sm text-gray-900 truncate">${title}</p>`;
                             html += `<p class="text-xs text-gray-400 truncate">${deviceName}</p>`;

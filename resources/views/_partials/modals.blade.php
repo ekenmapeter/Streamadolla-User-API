@@ -55,6 +55,18 @@
                             <input type="radio" name="modal_platform" value="youtube" class="hidden">
                             <i class="fab fa-youtube text-red-500 mr-1 sm:mr-2"></i><span class="font-medium">YouTube</span>
                         </label>
+                        <label class="modal-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-gray-200 text-xs" data-platform="tidal">
+                            <input type="radio" name="modal_platform" value="tidal" class="hidden">
+                            <i class="fas fa-water text-cyan-500 mr-1 sm:mr-2"></i><span class="font-medium">TIDAL</span>
+                        </label>
+                        <label class="modal-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-gray-200 text-xs" data-platform="iheart">
+                            <input type="radio" name="modal_platform" value="iheart" class="hidden">
+                            <i class="fas fa-heart text-pink-500 mr-1 sm:mr-2"></i><span class="font-medium">iHeartRadio</span>
+                        </label>
+                        <label class="modal-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-gray-200 text-xs" data-platform="audiomack">
+                            <input type="radio" name="modal_platform" value="audiomack" class="hidden">
+                            <i class="fas fa-headphones text-yellow-600 mr-1 sm:mr-2"></i><span class="font-medium">Audiomack</span>
+                        </label>
                     </div>
                 </div>
                 <div id="modal-spotify-group">
@@ -68,6 +80,18 @@
                 <div id="modal-youtube-group" class="hidden">
                     <label class="block text-sm font-medium text-gray-700 mb-2">YouTube URL</label>
                     <input type="text" id="modal_youtube_url" placeholder="https://www.youtube.com/watch?v=..." class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 outline-none">
+                </div>
+                <div id="modal-tidal-group" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">TIDAL URL</label>
+                    <input type="text" id="modal_tidal_url" placeholder="https://tidal.com/browse/track/..." class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 outline-none">
+                </div>
+                <div id="modal-iheart-group" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">iHeartRadio URL</label>
+                    <input type="text" id="modal_iheart_url" placeholder="https://www.iheart.com/..." class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-500 outline-none">
+                </div>
+                <div id="modal-audiomack-group" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Audiomack URL</label>
+                    <input type="text" id="modal_audiomack_url" placeholder="https://audiomack.com/..." class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-600 outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Task Label <span class="text-gray-400">(optional)</span></label>
@@ -166,6 +190,18 @@
                     <label class="edit-campaign-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-gray-200" data-platform="youtube">
                         <input type="radio" name="edit_campaign_platform" value="youtube" class="hidden">
                         <i class="fab fa-youtube text-red-500 text-xl mr-2"></i><span class="font-medium">YouTube</span>
+                    </label>
+                    <label class="edit-campaign-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-gray-200" data-platform="tidal">
+                        <input type="radio" name="edit_campaign_platform" value="tidal" class="hidden">
+                        <i class="fas fa-water text-cyan-500 text-xl mr-2"></i><span class="font-medium">TIDAL</span>
+                    </label>
+                    <label class="edit-campaign-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-gray-200" data-platform="iheart">
+                        <input type="radio" name="edit_campaign_platform" value="iheart" class="hidden">
+                        <i class="fas fa-heart text-pink-500 text-xl mr-2"></i><span class="font-medium">iHeartRadio</span>
+                    </label>
+                    <label class="edit-campaign-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-gray-200" data-platform="audiomack">
+                        <input type="radio" name="edit_campaign_platform" value="audiomack" class="hidden">
+                        <i class="fas fa-headphones text-yellow-600 text-xl mr-2"></i><span class="font-medium">Audiomack</span>
                     </label>
                 </div>
             </div>

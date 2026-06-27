@@ -15,6 +15,18 @@ class AssignmentController extends Controller
 {
     private $messaging;
 
+    public static function platformCommand(string $platform): string
+    {
+        return match ($platform) {
+            'spotify' => 'play_spotify',
+            'apple_music' => 'play_applemusic',
+            'tidal' => 'play_tidal',
+            'iheart', 'iheartradio' => 'play_iheart',
+            'audiomack' => 'play_audiomack',
+            default => 'play_youtube',
+        };
+    }
+
     public function __construct()
     {
         $credentialsPath = base_path(config('firebase.credentials'));
@@ -43,7 +55,7 @@ class AssignmentController extends Controller
         $validator = Validator::make($request->all(), [
             'device_ids'   => 'required|array|min:1',
             'device_ids.*' => 'exists:devices,id',
-            'platform'     => 'required|in:spotify,youtube,apple_music',
+            'platform'     => 'required|in:spotify,youtube,apple_music,tidal,iheart,audiomack',
             'media_url'    => 'required|string',
             'media_title'  => 'nullable|string|max:255',
         ]);
@@ -79,7 +91,7 @@ class AssignmentController extends Controller
                 try {
                     $message = CloudMessage::withTarget('token', $device->fcm_token)
                         ->withData([
-                            'command'         => $request->platform === 'spotify' ? 'play_spotify' : ($request->platform === 'apple_music' ? 'play_applemusic' : 'play_youtube'),
+                            'command'         => self::platformCommand($request->platform),
                             'track_id'        => $request->media_url,
                             'youtube_url'     => $request->media_url,
                             'apple_music_url' => $request->media_url,
@@ -247,7 +259,7 @@ class AssignmentController extends Controller
             ];
 
             if ($action === 'play') {
-                $data['command']     = $assignment->platform === 'spotify' ? 'play_spotify' : ($assignment->platform === 'apple_music' ? 'play_applemusic' : 'play_youtube');
+                $data['command']     = self::platformCommand($assignment->platform);
                 $data['platform']    = $assignment->platform;
                 $data['media_url']   = $assignment->media_url;
                 $data['track_id']        = $assignment->media_url;
@@ -351,7 +363,7 @@ class AssignmentController extends Controller
                 ]);
 
                 try {
-                    $command = $assignment->platform === 'spotify' ? 'play_spotify' : ($assignment->platform === 'apple_music' ? 'play_applemusic' : 'play_youtube');
+                    $command = self::platformCommand($assignment->platform);
                     $message = CloudMessage::withTarget('token', $device->fcm_token)
                         ->withData([
                             'command'         => $command,
@@ -385,7 +397,7 @@ class AssignmentController extends Controller
                 ]);
 
                 try {
-                    $command = $assignment->platform === 'spotify' ? 'play_spotify' : ($assignment->platform === 'apple_music' ? 'play_applemusic' : 'play_youtube');
+                    $command = self::platformCommand($assignment->platform);
                     $message = CloudMessage::withTarget('token', $device->fcm_token)
                         ->withData([
                             'command'         => $command,
@@ -425,7 +437,7 @@ class AssignmentController extends Controller
                 ]);
 
                 try {
-                    $command = $assignment->platform === 'spotify' ? 'play_spotify' : ($assignment->platform === 'apple_music' ? 'play_applemusic' : 'play_youtube');
+                    $command = self::platformCommand($assignment->platform);
                     $message = CloudMessage::withTarget('token', $device->fcm_token)
                         ->withData([
                             'command'         => $command,

@@ -341,6 +341,27 @@
                                             <i class="fab fa-youtube text-red-500 text-xl mr-2"></i>
                                             <span class="font-medium">YouTube</span>
                                         </label>
+                                        <label
+                                            class="assign-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-gray-200"
+                                            data-platform="tidal">
+                                            <input type="radio" name="platform" value="tidal" class="hidden">
+                                            <i class="fas fa-water text-cyan-500 text-xl mr-2"></i>
+                                            <span class="font-medium">TIDAL</span>
+                                        </label>
+                                        <label
+                                            class="assign-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-gray-200"
+                                            data-platform="iheart">
+                                            <input type="radio" name="platform" value="iheart" class="hidden">
+                                            <i class="fas fa-heart text-pink-500 text-xl mr-2"></i>
+                                            <span class="font-medium">iHeartRadio</span>
+                                        </label>
+                                        <label
+                                            class="assign-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-gray-200"
+                                            data-platform="audiomack">
+                                            <input type="radio" name="platform" value="audiomack" class="hidden">
+                                            <i class="fas fa-headphones text-yellow-600 text-xl mr-2"></i>
+                                            <span class="font-medium">Audiomack</span>
+                                        </label>
                                     </div>
                                 </div>
 
@@ -371,6 +392,30 @@
                                             placeholder="https://www.youtube.com/watch?v=..."
                                             class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 smooth-transition">
                                         <p class="text-xs text-gray-500 mt-1">Supports video or playlist URLs</p>
+                                    </div>
+                                    <div id="assign-tidal-group" class="hidden">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2"><i
+                                                class="fas fa-water mr-2 text-cyan-500"></i>TIDAL URL</label>
+                                        <input type="text" id="assign_media_tidal"
+                                            placeholder="https://tidal.com/browse/track/..."
+                                            class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 smooth-transition">
+                                        <p class="text-xs text-gray-500 mt-1">Supports track, album, or playlist URLs</p>
+                                    </div>
+                                    <div id="assign-iheart-group" class="hidden">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2"><i
+                                                class="fas fa-heart mr-2 text-pink-500"></i>iHeartRadio URL</label>
+                                        <input type="text" id="assign_media_iheart"
+                                            placeholder="https://www.iheart.com/..."
+                                            class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 smooth-transition">
+                                        <p class="text-xs text-gray-500 mt-1">Supports artist, song, or live radio URLs</p>
+                                    </div>
+                                    <div id="assign-audiomack-group" class="hidden">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2"><i
+                                                class="fas fa-headphones mr-2 text-yellow-600"></i>Audiomack URL</label>
+                                        <input type="text" id="assign_media_audiomack"
+                                            placeholder="https://audiomack.com/..."
+                                            class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-600 focus:border-yellow-600 smooth-transition">
+                                        <p class="text-xs text-gray-500 mt-1">Supports song or album URLs</p>
                                     </div>
                                     <input type="hidden" name="media_url" id="assign_media_url">
                                 </div>
@@ -444,7 +489,7 @@
                                                             @if ($ca)
                                                                 <p class="text-xs mt-1 truncate">
                                                                     <i
-                                                                        class="fab fa-{{ $ca->platform === 'apple_music' ? 'apple' : $ca->platform }} {{ $ca->platform === 'spotify' ? 'text-green-500' : ($ca->platform === 'apple_music' ? 'text-red-600' : 'text-red-500') }} mr-1"></i>
+                                                                        class="{{ $ca->platform === 'tidal' || $ca->platform === 'iheart' || $ca->platform === 'audiomack' ? 'fas' : 'fab' }} fa-{{ $ca->platform === 'apple_music' ? 'apple' : ($ca->platform === 'tidal' ? 'water' : ($ca->platform === 'iheart' ? 'heart' : ($ca->platform === 'audiomack' ? 'headphones' : $ca->platform))) }} {{ $ca->platform === 'spotify' ? 'text-green-500' : ($ca->platform === 'apple_music' ? 'text-red-600' : ($ca->platform === 'tidal' ? 'text-cyan-500' : ($ca->platform === 'iheart' ? 'text-pink-500' : ($ca->platform === 'audiomack' ? 'text-yellow-600' : 'text-red-500')))) }} mr-1"></i>
                                                                     <span
                                                                         class="text-gray-500">{{ $ca->media_title ?? Str::limit($ca->media_url, 25) }}</span>
                                                                 </p>
@@ -495,7 +540,7 @@
                                             <div class="flex items-start justify-between mb-2">
                                                 <div class="flex items-center min-w-0">
                                                     <i
-                                                        class="fab fa-{{ $assignment->platform === 'apple_music' ? 'apple' : $assignment->platform }} {{ $assignment->platform === 'spotify' ? 'text-green-500' : ($assignment->platform === 'apple_music' ? 'text-red-600' : 'text-red-500') }} text-lg mr-2 flex-shrink-0"></i>
+                                                        class="{{ $assignment->platform === 'tidal' || $assignment->platform === 'iheart' || $assignment->platform === 'audiomack' ? 'fas' : 'fab' }} fa-{{ $assignment->platform === 'apple_music' ? 'apple' : ($assignment->platform === 'tidal' ? 'water' : ($assignment->platform === 'iheart' ? 'heart' : ($assignment->platform === 'audiomack' ? 'headphones' : $assignment->platform))) }} {{ $assignment->platform === 'spotify' ? 'text-green-500' : ($assignment->platform === 'apple_music' ? 'text-red-600' : ($assignment->platform === 'tidal' ? 'text-cyan-500' : ($assignment->platform === 'iheart' ? 'text-pink-500' : ($assignment->platform === 'audiomack' ? 'text-yellow-600' : 'text-red-500')))) }} text-lg mr-2 flex-shrink-0"></i>
                                                     <div class="min-w-0">
                                                         <p class="font-medium text-sm text-gray-900 truncate">
                                                             {{ $assignment->media_title ?? 'Untitled' }}</p>
@@ -612,7 +657,7 @@
                                                         </p>
                                                         @if ($ca2)
                                                             <p class="text-xs mt-0.5"><i
-                                                                    class="fab fa-{{ $ca2->platform === 'apple_music' ? 'apple' : $ca2->platform }} {{ $ca2->platform === 'spotify' ? 'text-green-500' : ($ca2->platform === 'apple_music' ? 'text-red-600' : 'text-red-500') }} mr-1"></i><span
+                                                                     class="{{ $ca2->platform === 'tidal' || $ca2->platform === 'iheart' || $ca2->platform === 'audiomack' ? 'fas' : 'fab' }} fa-{{ $ca2->platform === 'apple_music' ? 'apple' : ($ca2->platform === 'tidal' ? 'water' : ($ca2->platform === 'iheart' ? 'heart' : ($ca2->platform === 'audiomack' ? 'headphones' : $ca2->platform))) }} {{ $ca2->platform === 'spotify' ? 'text-green-500' : ($ca2->platform === 'apple_music' ? 'text-red-600' : ($ca2->platform === 'tidal' ? 'text-cyan-500' : ($ca2->platform === 'iheart' ? 'text-pink-500' : ($ca2->platform === 'audiomack' ? 'text-yellow-600' : 'text-red-500')))) }} mr-1"></i><span
                                                                     class="text-gray-500">{{ $ca2->media_title ?? Str::limit($ca2->media_url, 20) }}</span>
                                                             </p>
                                                         @endif
@@ -700,6 +745,30 @@
                                             class="hidden">
                                         <i class="fab fa-youtube text-red-500 text-xl mr-2"></i><span
                                             class="font-medium">YouTube</span>
+                                    </label>
+                                    <label
+                                        class="campaign-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-gray-200"
+                                        data-platform="tidal">
+                                        <input type="radio" name="campaign_platform" value="tidal"
+                                            class="hidden">
+                                        <i class="fas fa-water text-cyan-500 text-xl mr-2"></i><span
+                                            class="font-medium">TIDAL</span>
+                                    </label>
+                                    <label
+                                        class="campaign-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-gray-200"
+                                        data-platform="iheart">
+                                        <input type="radio" name="campaign_platform" value="iheart"
+                                            class="hidden">
+                                        <i class="fas fa-heart text-pink-500 text-xl mr-2"></i><span
+                                            class="font-medium">iHeartRadio</span>
+                                    </label>
+                                    <label
+                                        class="campaign-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-gray-200"
+                                        data-platform="audiomack">
+                                        <input type="radio" name="campaign_platform" value="audiomack"
+                                            class="hidden">
+                                        <i class="fas fa-headphones text-yellow-600 text-xl mr-2"></i><span
+                                            class="font-medium">Audiomack</span>
                                     </label>
                                 </div>
                             </div>
@@ -806,7 +875,7 @@
                                                 <div>
                                                     <div class="flex items-center">
                                                         <i
-                                                            class="fab fa-{{ $campaign->platform === 'apple_music' ? 'apple' : $campaign->platform }} {{ $campaign->platform === 'spotify' ? 'text-green-500' : ($campaign->platform === 'apple_music' ? 'text-red-600' : 'text-red-500') }} text-lg mr-2"></i>
+                                                             class="{{ $campaign->platform === 'tidal' || $campaign->platform === 'iheart' || $campaign->platform === 'audiomack' ? 'fas' : 'fab' }} fa-{{ $campaign->platform === 'apple_music' ? 'apple' : ($campaign->platform === 'tidal' ? 'water' : ($campaign->platform === 'iheart' ? 'heart' : ($campaign->platform === 'audiomack' ? 'headphones' : $campaign->platform))) }} {{ $campaign->platform === 'spotify' ? 'text-green-500' : ($campaign->platform === 'apple_music' ? 'text-red-600' : ($campaign->platform === 'tidal' ? 'text-cyan-500' : ($campaign->platform === 'iheart' ? 'text-pink-500' : ($campaign->platform === 'audiomack' ? 'text-yellow-600' : 'text-red-500')))) }} text-lg mr-2"></i>
                                                         <h3 class="font-bold text-gray-900">{{ $campaign->name }}</h3>
                                                     </div>
                                                     <p class="text-xs text-gray-400 mt-1">
@@ -933,6 +1002,27 @@
                                     <i class="fab fa-youtube text-red-500 mr-2"></i><span
                                         class="font-medium">YouTube</span>
                                 </label>
+                                <label
+                                    class="bcast-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-gray-200"
+                                    data-platform="tidal">
+                                    <input type="radio" name="platform" value="tidal" class="hidden">
+                                    <i class="fas fa-water text-cyan-500 mr-2"></i><span
+                                        class="font-medium">TIDAL</span>
+                                </label>
+                                <label
+                                    class="bcast-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-gray-200"
+                                    data-platform="iheart">
+                                    <input type="radio" name="platform" value="iheart" class="hidden">
+                                    <i class="fas fa-heart text-pink-500 mr-2"></i><span
+                                        class="font-medium">iHeartRadio</span>
+                                </label>
+                                <label
+                                    class="bcast-platform-btn flex items-center p-3 border-2 rounded-xl cursor-pointer smooth-transition border-gray-200"
+                                    data-platform="audiomack">
+                                    <input type="radio" name="platform" value="audiomack" class="hidden">
+                                    <i class="fas fa-headphones text-yellow-600 mr-2"></i><span
+                                        class="font-medium">Audiomack</span>
+                                </label>
                             </div>
                             <div class="grid grid-cols-2 gap-3 mb-4">
                                 <label
@@ -962,6 +1052,24 @@
                                 <input type="text" name="youtube_url"
                                     placeholder="https://www.youtube.com/watch?v=..."
                                     class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500">
+                            </div>
+                            <div id="bcast-tidal-group" class="hidden mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">TIDAL URL</label>
+                                <input type="text" name="tidal_url"
+                                    placeholder="https://tidal.com/browse/track/..."
+                                    class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500">
+                            </div>
+                            <div id="bcast-iheart-group" class="hidden mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">iHeartRadio URL</label>
+                                <input type="text" name="iheart_url"
+                                    placeholder="https://www.iheart.com/..."
+                                    class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-500">
+                            </div>
+                            <div id="bcast-audiomack-group" class="hidden mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Audiomack URL</label>
+                                <input type="text" name="audiomack_url"
+                                    placeholder="https://audiomack.com/..."
+                                    class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-600">
                             </div>
                             <button type="submit"
                                 class="w-full bg-gradient-to-r from-primary-600 to-blue-500 hover:from-primary-700 hover:to-blue-600 text-white font-semibold py-4 px-6 rounded-xl smooth-transition flex items-center justify-center shadow-lg">

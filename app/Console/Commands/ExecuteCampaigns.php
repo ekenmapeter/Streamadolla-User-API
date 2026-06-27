@@ -146,9 +146,7 @@ class ExecuteCampaigns extends Command
                 $this->info("  " . $advanceMsg);
                 Log::info($advanceMsg);
 
-                $command = $campaign->platform === 'spotify'
-                    ? 'play_spotify'
-                    : ($campaign->platform === 'apple_music' ? 'play_applemusic' : 'play_youtube');
+                $command = \App\Http\Controllers\Api\AssignmentController::platformCommand($campaign->platform);
 
                 $message = CloudMessage::withTarget('token', $device->fcm_token)
                     ->withData([
@@ -203,9 +201,7 @@ class ExecuteCampaigns extends Command
                 $this->info("  " . $advanceMsg);
                 Log::info($advanceMsg);
 
-                $command = $campaign->platform === 'spotify'
-                    ? 'play_spotify'
-                    : ($campaign->platform === 'apple_music' ? 'play_applemusic' : 'play_youtube');
+                $command = \App\Http\Controllers\Api\AssignmentController::platformCommand($campaign->platform);
 
                 $interstitialDuration = (int)($campaign->interstitial_duration_seconds ?? 120);
 
@@ -262,9 +258,7 @@ class ExecuteCampaigns extends Command
                 $this->info("  " . $advanceMsg);
                 Log::info($advanceMsg);
 
-                $command = $campaign->platform === 'spotify'
-                    ? 'play_spotify'
-                    : ($campaign->platform === 'apple_music' ? 'play_applemusic' : 'play_youtube');
+                $command = \App\Http\Controllers\Api\AssignmentController::platformCommand($campaign->platform);
 
                 $message = CloudMessage::withTarget('token', $device->fcm_token)
                     ->withData([

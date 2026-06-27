@@ -31,7 +31,7 @@ class CampaignController extends Controller
     {
         $request->validate([
             'name'     => 'required|string|max:255',
-            'platform' => 'required|in:spotify,youtube,apple_music',
+            'platform' => 'required|in:spotify,youtube,apple_music,tidal,iheart,audiomack',
             'tracks'   => 'required|array|min:1',
             'tracks.*.media_url'          => 'required|string',
             'tracks.*.media_title'        => 'nullable|string|max:255',
@@ -74,7 +74,7 @@ class CampaignController extends Controller
     {
         $request->validate([
             'name'     => 'sometimes|string|max:255',
-            'platform' => 'sometimes|in:spotify,youtube,apple_music',
+            'platform' => 'sometimes|in:spotify,youtube,apple_music,tidal,iheart,audiomack',
             'tracks'   => 'sometimes|array|min:1',
             'tracks.*.media_url'          => 'required_with:tracks|string',
             'tracks.*.media_title'        => 'nullable|string|max:255',
@@ -197,9 +197,7 @@ class CampaignController extends Controller
 
             // Send FCM to start playing first track
             try {
-                $command = $campaign->platform === 'spotify'
-                    ? 'play_spotify'
-                    : ($campaign->platform === 'apple_music' ? 'play_applemusic' : 'play_youtube');
+                $command = \App\Http\Controllers\Api\AssignmentController::platformCommand($campaign->platform);
 
                 $message = CloudMessage::withTarget('token', $device->fcm_token)
                     ->withData([
