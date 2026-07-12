@@ -215,12 +215,12 @@
                             <tr class="assignment-row transition-all duration-200 cursor-pointer hover:bg-slate-50"
                                 id="row-{{ $assignment->id }}"
                                 onclick="const tgt=event.target; if(tgt.type!=='checkbox'){document.getElementById('accordion-{{ $assignment->id }}').classList.toggle('hidden')}">
-                                <td class="px-4 py-6 w-12">
+                                <td class="px-4 py-2 w-12">
                                     <input type="checkbox" name="selected_ids[]" value="{{ $assignment->id }}"
                                         class="assignment-checkbox h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
                                         onclick="event.stopPropagation()">
                                 </td>
-                                <td class="px-8 py-6">
+                                <td class="px-8 py-2">
                                     <div class="flex items-center space-x-4">
                                         <div
                                             class="h-12 w-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-500">
@@ -234,7 +234,7 @@
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-8 py-6">
+                                <td class="px-8 py-2">
                                     <div class="max-w-xs">
                                         <p class="font-bold text-slate-900 truncate"
                                             title="{{ $assignment->media_title }}">
@@ -245,7 +245,7 @@
                                         </p>
                                     </div>
                                 </td>
-                                <td class="px-8 py-6">
+                                <td class="px-8 py-2">
                                     <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-100">
                                         <i
                                             class="fab fa-{{ $assignment->platform }} {{ $assignment->platform === 'spotify' ? 'text-emerald-500' : 'text-rose-500' }}"></i>
@@ -253,7 +253,7 @@
                                             class="text-xs font-bold capitalize text-slate-700">{{ $assignment->platform }}</span>
                                     </div>
                                 </td>
-                                <td class="px-8 py-6">
+                                <td class="px-8 py-2">
                                     @php
                                         $colors = [
                                             'pending' => 'bg-yellow-100 text-yellow-700 border-yellow-200',
@@ -272,7 +272,7 @@
                                         {{ $assignment->status }}
                                     </div>
                                 </td>
-                                <td class="px-8 py-6 text-right">
+                                <td class="px-8 py-2 text-right">
                                     <p class="text-sm font-bold text-slate-900">
                                         {{ $assignment->created_at->format('H:i:s') }}</p>
 
@@ -315,7 +315,7 @@
                             </tr>
                             <tr id="accordion-{{ $assignment->id }}"
                                 class="hidden bg-slate-50 border-b border-slate-200">
-                                <td colspan="6" class="px-8 py-5">
+                                <td colspan="6" class="px-4 py-2">
                                     <div class="pl-16"> <!-- Indent to align nicely with the columns -->
                                         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
                                             <i class="fas fa-list-ol mr-1"></i> Campaign Tracks (Full Loop)</p>
