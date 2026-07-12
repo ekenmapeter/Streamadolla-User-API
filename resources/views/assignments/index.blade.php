@@ -192,7 +192,7 @@
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="border-b border-slate-100 bg-slate-50/50">
-                            <th class="px-4 py-2 w-12">
+                            <th class="px-2 py-2 w-12">
                                 <input type="checkbox" id="select-all"
                                     class="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer">
                             </th>
@@ -220,7 +220,7 @@
                                         class="assignment-checkbox h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
                                         onclick="event.stopPropagation()">
                                 </td>
-                                <td class="px-8 py-2">
+                                <td class="px-2 py-2">
                                     <div class="flex items-center space-x-4">
                                         <div
                                             class="h-12 w-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-500">
@@ -234,7 +234,7 @@
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-8 py-2">
+                                <td class="px-2 py-2">
                                     <div class="max-w-xs">
                                         <p class="font-bold text-slate-900 truncate"
                                             title="{{ $assignment->media_title }}">
@@ -245,7 +245,7 @@
                                         </p>
                                     </div>
                                 </td>
-                                <td class="px-8 py-2">
+                                <td class="px-2 py-2">
                                     <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-100">
                                         <i
                                             class="fab fa-{{ $assignment->platform }} {{ $assignment->platform === 'spotify' ? 'text-emerald-500' : 'text-rose-500' }}"></i>
@@ -253,7 +253,7 @@
                                             class="text-xs font-bold capitalize text-slate-700">{{ $assignment->platform }}</span>
                                     </div>
                                 </td>
-                                <td class="px-8 py-2">
+                                <td class="px-2 py-2">
                                     @php
                                         $colors = [
                                             'pending' => 'bg-yellow-100 text-yellow-700 border-yellow-200',
@@ -272,7 +272,7 @@
                                         {{ $assignment->status }}
                                     </div>
                                 </td>
-                                <td class="px-8 py-2 text-right">
+                                <td class="px-2 py-2 text-right">
                                     <p class="text-sm font-bold text-slate-900">
                                         {{ $assignment->created_at->format('H:i:s') }}</p>
 
@@ -363,7 +363,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-8 py-20 text-center">
+                                <td colspan="6" class="px-2 py-20 text-center">
                                     <div class="max-w-xs mx-auto">
                                         <div
                                             class="h-20 w-20 rounded-3xl bg-slate-50 flex items-center justify-center text-slate-200 mx-auto mb-6">
