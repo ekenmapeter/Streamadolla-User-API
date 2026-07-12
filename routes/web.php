@@ -26,6 +26,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/logs/clear', [DashboardController::class, 'clearLogs'])->name('logs.clear');
     Route::get('/device-assignments/stats', [DeviceAssignmentController::class, 'stats'])->name('assignments.stats');
     Route::post('/device-assignments/clear', [DeviceAssignmentController::class, 'clearAll'])->name('assignments.clear');
+    Route::post('/device-assignments/bulk-delete', [DeviceAssignmentController::class, 'bulkDelete'])->name('assignments.bulk-delete');
     Route::post('/device-assignments/run-worker', [DeviceAssignmentController::class, 'runWorker'])->name('assignments.worker');
     Route::post('/device-assignments/{assignment}/delete', [DeviceAssignmentController::class, 'destroySingle'])->name('assignments.destroy');
 });

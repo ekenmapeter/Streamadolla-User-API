@@ -116,6 +116,53 @@ class DeviceAssignmentController extends Controller
         return back()->with('success', 'All assignments cleared and stop commands sent to devices.');
     }
 
+    public function bulkDelete(Request $request)
+    {
+        $ids = $request->input('ids', []);
+        if (empty($ids)) {
+            return back()->with('error', 'No assignments selected.');
+        }
+
+        $assignments = DeviceAssignment::with('device')->whereIn('id', $ids)->get();
+        $messaging = $this->getMessaging();
+        $deletedCount = 0;
+
+        foreach ($assignments as $assignment) {
+            $device = $assignment->device;
+
+            if ($assignment->isActive() && $device && $device->fcm_token) {
+                try {
+                    if ($messaging) {
+                        $message = CloudMessage::withTarget('token', $device->fcm_token)
+                            ->withData([
+                                'command'       => 'stop',
+                                'action'        => 'stop',
+                                'assignment_id' => (string) $assignment->id,
+                                'timestamp'     => (string) now()->timestamp,
+                                'command_id'    => Str::uuid()->toString(),
+                            ])
+                            ->withAndroidConfig(['priority' => 'high']);
+                        $messaging->send($message);
+                    }
+                } catch (\Exception $e) {}
+            }
+
+            $assignment->delete();
+            $deletedCount++;
+        }
+
+        // Reset device statuses for devices that no longer have active assignments
+        $deviceIds = $assignments->pluck('device_id')->unique();
+        foreach ($deviceIds as $deviceId) {
+            $device = \App\Models\Device::find($deviceId);
+            if ($device && $device->assignments()->active()->count() === 0) {
+                $device->update(['status' => 'online']);
+            }
+        }
+
+        return back()->with('success', "{$deletedCount} assignment(s) deleted successfully.");
+    }
+
     public function runWorker()
     {
         try {

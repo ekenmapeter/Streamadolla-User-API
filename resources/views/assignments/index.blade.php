@@ -172,12 +172,39 @@
             </div>
         </div>
 
+        <!-- Bulk Action Bar -->
+        <div id="bulk-bar" class="hidden mb-6 p-4 bg-white rounded-2xl border border-slate-200 premium-shadow flex items-center justify-between">
+            <div class="flex items-center">
+                <div class="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center mr-4">
+                    <i class="fas fa-check-circle text-primary-600"></i>
+                </div>
+                <div>
+                    <p class="font-bold text-slate-900">
+                        <span id="selected-count">0</span> assignment(s) selected
+                    </p>
+                </div>
+            </div>
+            <form id="bulk-delete-form" action="{{ route('assignments.bulk-delete') }}" method="POST"
+                  onsubmit="return confirm('Are you sure you want to delete the selected assignments? Devices streaming will be set to online.');">
+                @csrf
+                <div id="bulk-ids-container"></div>
+                <button type="submit"
+                    class="px-6 py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-2xl font-bold transition-colors border border-rose-200 shadow-sm">
+                    <i class="fas fa-trash-alt mr-2"></i>Delete Selected
+                </button>
+            </form>
+        </div>
+
         <!-- Assignments Table -->
         <div class="bg-white rounded-[2.5rem] border border-slate-100 premium-shadow overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="border-b border-slate-100 bg-slate-50/50">
+                            <th class="px-4 py-2 w-12">
+                                <input type="checkbox" id="select-all"
+                                    class="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer">
+                            </th>
                             <th class="px-2 py-2 text-xs font-bold text-slate-500 uppercase tracking-widest">Device</th>
                             <th class="px-2 py-2 text-xs font-bold text-slate-500 uppercase tracking-widest">Content
                             </th>
@@ -192,7 +219,12 @@
                         @forelse($assignments as $assignment)
                             <tr class="assignment-row transition-all duration-200 cursor-pointer hover:bg-slate-50"
                                 id="row-{{ $assignment->id }}"
-                                onclick="document.getElementById('accordion-{{ $assignment->id }}').classList.toggle('hidden')">
+                                onclick="const tgt=event.target; if(tgt.type!=='checkbox'){document.getElementById('accordion-{{ $assignment->id }}').classList.toggle('hidden')}">
+                                <td class="px-4 py-6 w-12">
+                                    <input type="checkbox" name="selected_ids[]" value="{{ $assignment->id }}"
+                                        class="assignment-checkbox h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                                        onclick="event.stopPropagation()">
+                                </td>
                                 <td class="px-8 py-6">
                                     <div class="flex items-center space-x-4">
                                         <div
@@ -288,7 +320,7 @@
                             </tr>
                             <tr id="accordion-{{ $assignment->id }}"
                                 class="hidden bg-slate-50 border-b border-slate-200">
-                                <td colspan="5" class="px-8 py-5">
+                                <td colspan="6" class="px-8 py-5">
                                     <div class="pl-16"> <!-- Indent to align nicely with the columns -->
                                         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
                                             <i class="fas fa-list-ol mr-1"></i> Campaign Tracks (Full Loop)</p>
@@ -336,7 +368,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="px-8 py-20 text-center">
+                                <td colspan="6" class="px-8 py-20 text-center">
                                     <div class="max-w-xs mx-auto">
                                         <div
                                             class="h-20 w-20 rounded-3xl bg-slate-50 flex items-center justify-center text-slate-200 mx-auto mb-6">
@@ -486,6 +518,45 @@
             // Initial runs
             setTimeout(syncTimers, 500);
             setTimeout(triggerWorker, 2000);
+
+            // Bulk Selection
+            const selectAll = document.getElementById('select-all');
+            const checkboxes = document.querySelectorAll('.assignment-checkbox');
+            const bulkBar = document.getElementById('bulk-bar');
+            const selectedCount = document.getElementById('selected-count');
+            const bulkIdsContainer = document.getElementById('bulk-ids-container');
+
+            function updateBulkActions() {
+                const selected = document.querySelectorAll('.assignment-checkbox:checked');
+                const count = selected.length;
+
+                if (count > 0) {
+                    bulkBar.classList.remove('hidden');
+                    selectedCount.textContent = count;
+
+                    bulkIdsContainer.innerHTML = '';
+                    selected.forEach(cb => {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'ids[]';
+                        input.value = cb.value;
+                        bulkIdsContainer.appendChild(input);
+                    });
+                } else {
+                    bulkBar.classList.add('hidden');
+                }
+            }
+
+            if (selectAll) {
+                selectAll.addEventListener('change', function() {
+                    checkboxes.forEach(cb => cb.checked = this.checked);
+                    updateBulkActions();
+                });
+            }
+
+            checkboxes.forEach(cb => {
+                cb.addEventListener('change', updateBulkActions);
+            });
         });
     </script>
 </body>
