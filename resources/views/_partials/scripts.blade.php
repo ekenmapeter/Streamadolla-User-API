@@ -441,6 +441,64 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // ── Campaign: Bulk Selection & Delete ───────────────────────────────
+    const campaignCheckboxes = document.querySelectorAll('.campaign-checkbox');
+    const campaignBulkBar = document.getElementById('campaign-bulk-bar');
+    const campaignSelectedCount = document.getElementById('campaign-selected-count');
+    const deleteSelectedCampaignsBtn = document.getElementById('delete-selected-campaigns');
+    const clearCampaignSelectionBtn = document.getElementById('clear-campaign-selection');
+
+    function updateCampaignBulkUI() {
+        const checked = document.querySelectorAll('.campaign-checkbox:checked');
+        const count = checked.length;
+        if (campaignBulkBar) {
+            campaignBulkBar.style.display = count > 0 ? 'flex' : 'none';
+        }
+        if (campaignSelectedCount) {
+            campaignSelectedCount.textContent = count;
+        }
+    }
+
+    campaignCheckboxes.forEach(cb => {
+        cb.addEventListener('change', updateCampaignBulkUI);
+    });
+
+    if (deleteSelectedCampaignsBtn) {
+        deleteSelectedCampaignsBtn.addEventListener('click', function() {
+            const checked = document.querySelectorAll('.campaign-checkbox:checked');
+            if (checked.length === 0) return;
+            if (!confirm(`Delete ${checked.length} selected campaign(s)? Active deployments will be stopped.`)) return;
+
+            const ids = [];
+            checked.forEach(cb => ids.push(parseInt(cb.value)));
+
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Deleting...';
+
+            fetch('/api/campaigns/bulk-delete', {
+                method: 'POST', headers: headers,
+                body: JSON.stringify({ ids: ids })
+            })
+            .then(r => r.json())
+            .then(data => {
+                showNotification(data.message || 'Deleted', 'success');
+                setTimeout(() => location.reload(), 800);
+            })
+            .catch(err => {
+                showNotification('Error: ' + err, 'error');
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-trash-alt mr-1"></i>Delete Selected';
+            });
+        });
+    }
+
+    if (clearCampaignSelectionBtn) {
+        clearCampaignSelectionBtn.addEventListener('click', function() {
+            document.querySelectorAll('.campaign-checkbox').forEach(cb => cb.checked = false);
+            updateCampaignBulkUI();
+        });
+    }
+
     // ── Campaign: Edit (Open Modal & Populate) ──────────────────────────
     document.querySelectorAll('.edit-campaign').forEach(btn => {
         btn.addEventListener('click', function() {

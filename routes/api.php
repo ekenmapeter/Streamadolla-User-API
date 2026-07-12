@@ -40,6 +40,7 @@ use App\Http\Controllers\CampaignController;
 Route::prefix('campaigns')->group(function () {
     Route::get('/', [CampaignController::class, 'index']);
     Route::post('/', [CampaignController::class, 'store']);
+    Route::post('/bulk-delete', [CampaignController::class, 'bulkDestroy']);
     Route::put('/{campaign}', [CampaignController::class, 'update']);
     Route::delete('/{campaign}', [CampaignController::class, 'destroy']);
     Route::post('/{campaign}/deploy', [CampaignController::class, 'deploy']);

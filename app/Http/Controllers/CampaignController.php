@@ -130,9 +130,7 @@ class CampaignController extends Controller
 
     public function destroy(Campaign $campaign)
     {
-        DeviceAssignment::where('campaign_id', $campaign->id)
-            ->whereIn('status', ['pending', 'playing', 'paused'])
-            ->update(['status' => 'stopped']);
+        $this->stopCampaignAssignments($campaign);
 
         $campaign->delete();
 
@@ -140,6 +138,68 @@ class CampaignController extends Controller
             'success' => true,
             'message' => 'Campaign deleted',
         ]);
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        $ids = $request->input('ids', []);
+        if (empty($ids)) {
+            return response()->json(['success' => false, 'message' => 'No campaigns selected'], 422);
+        }
+
+        $campaigns = Campaign::whereIn('id', $ids)->get();
+        $count = 0;
+
+        foreach ($campaigns as $campaign) {
+            $this->stopCampaignAssignments($campaign);
+            $campaign->delete();
+            $count++;
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$count} campaign(s) deleted",
+        ]);
+    }
+
+    private function stopCampaignAssignments(Campaign $campaign)
+    {
+        $activeAssignments = DeviceAssignment::with('device')
+            ->where('campaign_id', $campaign->id)
+            ->whereIn('status', ['pending', 'playing', 'paused'])
+            ->get();
+
+        $messaging = $this->getMessaging();
+
+        foreach ($activeAssignments as $assignment) {
+            $device = $assignment->device;
+            if ($device && $device->fcm_token) {
+                try {
+                    if ($messaging) {
+                        $message = CloudMessage::withTarget('token', $device->fcm_token)
+                            ->withData([
+                                'command'       => 'stop',
+                                'action'        => 'stop',
+                                'assignment_id' => (string) $assignment->id,
+                                'timestamp'     => (string) now()->timestamp,
+                                'command_id'    => Str::uuid()->toString(),
+                            ])
+                            ->withAndroidConfig(['priority' => 'high']);
+                        $messaging->send($message);
+                    }
+                } catch (\Exception $e) {}
+            }
+            $assignment->update(['status' => 'stopped']);
+        }
+
+        // Reset device statuses
+        $deviceIds = $activeAssignments->pluck('device_id')->unique();
+        foreach ($deviceIds as $deviceId) {
+            $device = Device::find($deviceId);
+            if ($device && $device->assignments()->active()->count() === 0) {
+                $device->update(['status' => 'online']);
+            }
+        }
     }
 
     public function deploy(Request $request, Campaign $campaign)

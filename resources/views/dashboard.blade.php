@@ -867,30 +867,57 @@
                         </div>
                         <div class="p-4">
                             @if (isset($campaigns) && $campaigns->count() > 0)
+                                <!-- Campaign Bulk Action Bar -->
+                                <div id="campaign-bulk-bar" class="mb-4 p-3 bg-white rounded-xl border border-purple-200 flex items-center justify-between" style="display:none">
+                                    <div class="flex items-center">
+                                        <div class="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center mr-3">
+                                            <i class="fas fa-check-circle text-purple-600"></i>
+                                        </div>
+                                        <p class="font-bold text-slate-900">
+                                            <span id="campaign-selected-count">0</span> campaign(s) selected
+                                        </p>
+                                    </div>
+                                    <div class="flex space-x-2">
+                                        <button id="clear-campaign-selection"
+                                            class="px-3 py-1.5 bg-slate-50 text-slate-600 text-xs rounded-lg hover:bg-slate-100 smooth-transition font-medium">
+                                            Clear
+                                        </button>
+                                        <button id="delete-selected-campaigns"
+                                            class="px-3 py-1.5 bg-red-50 text-red-600 text-xs rounded-lg hover:bg-red-100 smooth-transition font-medium">
+                                            <i class="fas fa-trash-alt mr-1"></i>Delete Selected
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <div class="space-y-4 max-h-[600px] overflow-y-auto pr-1">
                                     @foreach ($campaigns as $campaign)
                                         <div class="p-4 border border-gray-200 rounded-xl smooth-transition hover:shadow-md"
                                             data-campaign-id="{{ $campaign->id }}">
                                             <div class="flex items-start justify-between mb-3">
-                                                <div>
-                                                    <div class="flex items-center">
-                                                        <i
-                                                             class="{{ $campaign->platform === 'tidal' || $campaign->platform === 'iheart' || $campaign->platform === 'audiomack' ? 'fas' : 'fab' }} fa-{{ $campaign->platform === 'apple_music' ? 'apple' : ($campaign->platform === 'tidal' ? 'water' : ($campaign->platform === 'iheart' ? 'heart' : ($campaign->platform === 'audiomack' ? 'headphones' : $campaign->platform))) }} {{ $campaign->platform === 'spotify' ? 'text-green-500' : ($campaign->platform === 'apple_music' ? 'text-red-600' : ($campaign->platform === 'tidal' ? 'text-cyan-500' : ($campaign->platform === 'iheart' ? 'text-pink-500' : ($campaign->platform === 'audiomack' ? 'text-yellow-600' : 'text-red-500')))) }} text-lg mr-2"></i>
-                                                        <h3 class="font-bold text-gray-900">{{ $campaign->name }}</h3>
+                                                <div class="flex items-start space-x-3">
+                                                    <input type="checkbox"
+                                                        class="campaign-checkbox mt-1 h-4 w-4 rounded border-purple-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                                                        value="{{ $campaign->id }}">
+                                                    <div>
+                                                        <div class="flex items-center">
+                                                            <i
+                                                                 class="{{ $campaign->platform === 'tidal' || $campaign->platform === 'iheart' || $campaign->platform === 'audiomack' ? 'fas' : 'fab' }} fa-{{ $campaign->platform === 'apple_music' ? 'apple' : ($campaign->platform === 'tidal' ? 'water' : ($campaign->platform === 'iheart' ? 'heart' : ($campaign->platform === 'audiomack' ? 'headphones' : $campaign->platform))) }} {{ $campaign->platform === 'spotify' ? 'text-green-500' : ($campaign->platform === 'apple_music' ? 'text-red-600' : ($campaign->platform === 'tidal' ? 'text-cyan-500' : ($campaign->platform === 'iheart' ? 'text-pink-500' : ($campaign->platform === 'audiomack' ? 'text-yellow-600' : 'text-red-500')))) }} text-lg mr-2"></i>
+                                                            <h3 class="font-bold text-gray-900">{{ $campaign->name }}</h3>
+                                                        </div>
+                                                        <p class="text-xs text-gray-400 mt-1">
+                                                            {{ $campaign->tracks->count() }}
+                                                            tracks &bull; {{ $campaign->assignments_count ?? 0 }}
+                                                            assignments
+                                                            @if ($campaign->interstitial_every)
+                                                                &bull; <span class="text-amber-600 font-medium">Interstitial every {{ $campaign->interstitial_every }} tracks</span>
+                                                            @endif
+                                                            @if ($campaign->channel_url)
+                                                                &bull; <span class="text-red-500"><i class="fab fa-youtube mr-1"></i>Channel</span>
+                                                            @endif
+                                                        </p>
                                                     </div>
-                                                    <p class="text-xs text-gray-400 mt-1">
-                                                        {{ $campaign->tracks->count() }}
-                                                        tracks &bull; {{ $campaign->assignments_count ?? 0 }}
-                                                        assignments
-                                                        @if ($campaign->interstitial_every)
-                                                            &bull; <span class="text-amber-600 font-medium">Interstitial every {{ $campaign->interstitial_every }} tracks</span>
-                                                        @endif
-                                                        @if ($campaign->channel_url)
-                                                            &bull; <span class="text-red-500"><i class="fab fa-youtube mr-1"></i>Channel</span>
-                                                        @endif
-                                                    </p>
                                                 </div>
-                                                <div class="flex space-x-2">
+                                                <div class="flex space-x-2 flex-shrink-0">
                                                     <button
                                                          class="edit-campaign px-3 py-1.5 bg-amber-50 text-amber-600 text-xs rounded-lg hover:bg-amber-100 smooth-transition font-medium"
                                                          data-campaign-id="{{ $campaign->id }}"
@@ -902,7 +929,7 @@
                                                          data-interstitial-duration="{{ $campaign->interstitial_duration_seconds ?? 120 }}"
                                                          data-tracks="{{ json_encode($campaign->tracks) }}">
                                                          <i class="fas fa-edit mr-1"></i>Edit
-                                                     </button>
+                                                    </button>
                                                     <button
                                                         class="deploy-campaign px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-green-500 text-white text-xs rounded-lg hover:from-emerald-600 hover:to-green-600 smooth-transition font-medium"
                                                         data-campaign-id="{{ $campaign->id }}"

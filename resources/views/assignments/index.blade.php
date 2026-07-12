@@ -161,38 +161,29 @@
                     <span class="text-xs font-bold text-slate-500 uppercase tracking-widest worker-text">Worker: Starting...</span>
                 </div>
 
+                <span class="text-sm font-bold text-slate-400" id="selection-badge" style="display:none">
+                    <span id="selected-count-top">0</span> selected
+                </span>
+
+                <form id="bulk-delete-form" action="{{ route('assignments.bulk-delete') }}" method="POST"
+                      onsubmit="return confirm('Are you sure you want to delete the selected assignments? Devices streaming will be set to online.');">
+                    @csrf
+                    <div id="bulk-ids-container"></div>
+                    <button type="submit" id="delete-selected-btn"
+                        class="px-6 py-4 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-2xl font-bold transition-colors border border-rose-200 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed" disabled>
+                        <i class="fas fa-trash-alt mr-2"></i>Delete Selected
+                    </button>
+                </form>
+
                 <form action="{{ route('assignments.clear') }}" method="POST"
-                    onsubmit="return confirm('Are you sure you want to clear all assignments? Devices streaming will be set to online.');">
+                    onsubmit="return confirm('Are you sure you want to clear ALL assignments? This will stop all streaming devices.');">
                     @csrf
                     <button type="submit"
-                        class="px-6 py-4 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-2xl font-bold transition-colors border border-rose-200 shadow-sm">
-                        <i class="fas fa-trash-alt mr-2"></i>Clear All
+                        class="px-6 py-4 bg-slate-50 hover:bg-slate-100 text-slate-500 rounded-2xl font-bold transition-colors border border-slate-200 shadow-sm text-sm">
+                        <i class="fas fa-bomb mr-2"></i>Clear All
                     </button>
                 </form>
             </div>
-        </div>
-
-        <!-- Bulk Action Bar -->
-        <div id="bulk-bar" class="hidden mb-6 p-4 bg-white rounded-2xl border border-slate-200 premium-shadow flex items-center justify-between">
-            <div class="flex items-center">
-                <div class="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center mr-4">
-                    <i class="fas fa-check-circle text-primary-600"></i>
-                </div>
-                <div>
-                    <p class="font-bold text-slate-900">
-                        <span id="selected-count">0</span> assignment(s) selected
-                    </p>
-                </div>
-            </div>
-            <form id="bulk-delete-form" action="{{ route('assignments.bulk-delete') }}" method="POST"
-                  onsubmit="return confirm('Are you sure you want to delete the selected assignments? Devices streaming will be set to online.');">
-                @csrf
-                <div id="bulk-ids-container"></div>
-                <button type="submit"
-                    class="px-6 py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-2xl font-bold transition-colors border border-rose-200 shadow-sm">
-                    <i class="fas fa-trash-alt mr-2"></i>Delete Selected
-                </button>
-            </form>
         </div>
 
         <!-- Assignments Table -->
@@ -205,7 +196,11 @@
                                 <input type="checkbox" id="select-all"
                                     class="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer">
                             </th>
-                            <th class="px-2 py-2 text-xs font-bold text-slate-500 uppercase tracking-widest">Device</th>
+                            <th class="px-2 py-2 text-xs font-bold text-slate-500 uppercase tracking-widest">
+                                <span class="cursor-pointer select-none text-primary-600 hover:text-primary-800 transition-colors" id="select-all-text">Select All</span>
+                                <span class="text-slate-300 mx-1">/</span>
+                                <span class="cursor-pointer select-none text-slate-400 hover:text-slate-600 transition-colors" id="deselect-all-text">None</span>
+                            </th>
                             <th class="px-2 py-2 text-xs font-bold text-slate-500 uppercase tracking-widest">Content
                             </th>
                             <th class="px-2 py-2 text-xs font-bold text-slate-500 uppercase tracking-widest">Platform
@@ -522,29 +517,29 @@
             // Bulk Selection
             const selectAll = document.getElementById('select-all');
             const checkboxes = document.querySelectorAll('.assignment-checkbox');
-            const bulkBar = document.getElementById('bulk-bar');
-            const selectedCount = document.getElementById('selected-count');
+            const selectedCountTop = document.getElementById('selected-count-top');
+            const selectedCountBadge = document.getElementById('selection-badge');
             const bulkIdsContainer = document.getElementById('bulk-ids-container');
+            const deleteSelectedBtn = document.getElementById('delete-selected-btn');
+            const selectAllText = document.getElementById('select-all-text');
+            const deselectAllText = document.getElementById('deselect-all-text');
 
             function updateBulkActions() {
                 const selected = document.querySelectorAll('.assignment-checkbox:checked');
                 const count = selected.length;
 
-                if (count > 0) {
-                    bulkBar.classList.remove('hidden');
-                    selectedCount.textContent = count;
+                selectedCountTop.textContent = count;
+                selectedCountBadge.style.display = count > 0 ? 'inline' : 'none';
+                deleteSelectedBtn.disabled = count === 0;
 
-                    bulkIdsContainer.innerHTML = '';
-                    selected.forEach(cb => {
-                        const input = document.createElement('input');
-                        input.type = 'hidden';
-                        input.name = 'ids[]';
-                        input.value = cb.value;
-                        bulkIdsContainer.appendChild(input);
-                    });
-                } else {
-                    bulkBar.classList.add('hidden');
-                }
+                bulkIdsContainer.innerHTML = '';
+                selected.forEach(cb => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'ids[]';
+                    input.value = cb.value;
+                    bulkIdsContainer.appendChild(input);
+                });
             }
 
             if (selectAll) {
@@ -554,9 +549,28 @@
                 });
             }
 
+            if (selectAllText) {
+                selectAllText.addEventListener('click', function() {
+                    checkboxes.forEach(cb => cb.checked = true);
+                    if (selectAll) selectAll.checked = true;
+                    updateBulkActions();
+                });
+            }
+
+            if (deselectAllText) {
+                deselectAllText.addEventListener('click', function() {
+                    checkboxes.forEach(cb => cb.checked = false);
+                    if (selectAll) selectAll.checked = false;
+                    updateBulkActions();
+                });
+            }
+
             checkboxes.forEach(cb => {
                 cb.addEventListener('change', updateBulkActions);
             });
+
+            // Initial call to set correct state
+            updateBulkActions();
         });
     </script>
 </body>
