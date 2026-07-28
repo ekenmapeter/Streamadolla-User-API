@@ -160,13 +160,13 @@
     </div>
 </div>
 <!-- Edit Campaign Modal -->
-<div id="editCampaignModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] items-center justify-center hidden">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden">
-        <div class="bg-gradient-to-r from-amber-600 to-amber-500 px-6 py-4 flex items-center justify-between">
+<div id="editCampaignModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center overflow-y-auto p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div class="bg-gradient-to-r from-amber-600 to-amber-500 px-6 py-4 flex items-center justify-between flex-shrink-0">
             <h3 class="text-lg font-bold text-white"><i class="fas fa-edit mr-2"></i>Edit Campaign</h3>
             <button onclick="document.getElementById('editCampaignModal').classList.add('hidden')" class="text-white/80 hover:text-white transition-colors"><i class="fas fa-times"></i></button>
         </div>
-        <div class="p-6">
+        <div class="p-6 overflow-y-auto flex-1 min-h-0">
             <input type="hidden" id="edit_campaign_id">
             
             <!-- Campaign Name -->
