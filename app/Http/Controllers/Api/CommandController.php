@@ -16,29 +16,7 @@ class CommandController extends Controller
 
     public function __construct()
     {
-        $credentialsPath = base_path(config('firebase.credentials'));
-
-        // Smart search: If the configured file is missing, look for ANY firebase json in storage/app
-        if (!file_exists($credentialsPath)) {
-            $storagePath = storage_path('app');
-            $files = glob($storagePath . '/*.json');
-            
-            foreach ($files as $file) {
-                if (str_contains($file, 'firebase-adminsdk')) {
-                    $credentialsPath = $file;
-                    break;
-                }
-            }
-        }
-
-        if (!file_exists($credentialsPath)) {
-            throw new \RuntimeException("Firebase credentials file not found. We checked the config path AND searched storage/app. Please ensure your Firebase JSON file is in storage/app.");
-        }
-
-        $factory = (new Factory)
-            ->withServiceAccount($credentialsPath);
-
-        $this->messaging = $factory->createMessaging();
+        $this->messaging = app(\App\Services\FirebaseMessagingService::class)->messaging();
     }
 
     // Send command to ALL online devices

@@ -297,6 +297,11 @@
                 data-tab="logs">
                 <i class="fas fa-scroll mr-2"></i>Activity Log
             </button>
+            <button
+                class="tab-btn flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold border-2 border-transparent smooth-transition text-gray-500 hover:text-gray-700"
+                data-tab="reach">
+                <i class="fas fa-music mr-2"></i>AudioReach
+            </button>
         </div>
 
         <!-- TAB: Assign Tasks -->
@@ -1123,6 +1128,239 @@
         <!-- TAB: Activity Logs -->
         <div id="tab-logs" class="tab-content hidden">
             @include('_partials.logs', ['recentLogs' => $recentLogs])
+        </div>
+
+        <!-- TAB: AudioReach -->
+        <div id="tab-reach" class="tab-content hidden">
+            @php
+                $reachStats = $reach['stats'] ?? [];
+                $statusBadges = [
+                    'draft' => 'bg-gray-100 text-gray-600',
+                    'pending_payment' => 'bg-amber-100 text-amber-700',
+                    'active' => 'bg-green-100 text-green-700',
+                    'paused' => 'bg-blue-100 text-blue-700',
+                    'completed' => 'bg-purple-100 text-purple-700',
+                    'cancelled' => 'bg-red-100 text-red-700',
+                ];
+                $sessionStatusBadges = [
+                    'open' => 'bg-amber-100 text-amber-700',
+                    'rewarded' => 'bg-green-100 text-green-700',
+                    'abandoned' => 'bg-gray-100 text-gray-600',
+                    'fraud' => 'bg-red-100 text-red-700',
+                ];
+                $payoutStatusBadges = [
+                    'requested' => 'bg-amber-100 text-amber-700',
+                    'processing' => 'bg-blue-100 text-blue-700',
+                    'paid' => 'bg-green-100 text-green-700',
+                    'rejected' => 'bg-red-100 text-red-700',
+                ];
+            @endphp
+
+            <!-- Reach quick actions -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 mb-8 flex flex-wrap items-center gap-3">
+                <div class="flex items-center mr-auto">
+                    <div class="h-10 w-10 rounded-full bg-gradient-to-r from-purple-600 to-fuchsia-500 flex items-center justify-center mr-3">
+                        <i class="fas fa-music text-white"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-gray-900">AudioReach Command Center</h2>
+                        <p class="text-xs text-gray-500">Promo campaigns &bull; listens &bull; wallets &bull; payouts</p>
+                    </div>
+                </div>
+                <a href="{{ route('admin.campaigns') }}" class="px-3 py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 smooth-transition font-medium text-sm">
+                    <i class="fas fa-bullhorn mr-1.5"></i>All Campaigns
+                </a>
+                <a href="{{ route('admin.listeners') }}" class="px-3 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 smooth-transition font-medium text-sm">
+                    <i class="fas fa-users mr-1.5"></i>Listeners
+                </a>
+                <a href="{{ route('admin.payouts') }}" class="px-3 py-2 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 smooth-transition font-medium text-sm">
+                    <i class="fas fa-money-bill-wave mr-1.5"></i>Payouts
+                </a>
+                <a href="{{ route('admin.settings') }}" class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 smooth-transition font-medium text-sm">
+                    <i class="fas fa-cog mr-1.5"></i>Settings
+                </a>
+            </div>
+
+            <!-- Reach stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-8">
+                @foreach ([
+                    ['Listeners', 'fa-users', 'from-green-100 to-emerald-100', 'text-green-600', $reachStats['listeners'] ?? 0],
+                    ['Artists', 'fa-star', 'from-purple-100 to-violet-100', 'text-purple-600', $reachStats['artists'] ?? 0],
+                    ['Active Campaigns', 'fa-bullhorn', 'from-blue-100 to-cyan-100', 'text-blue-600', $reachStats['active_campaigns'] ?? 0],
+                    ['Listens Today', 'fa-headphones', 'from-amber-100 to-yellow-100', 'text-amber-600', $reachStats['sessions_today'] ?? 0],
+                    ['Rewards Paid', 'fa-hands-holding', 'from-emerald-100 to-teal-100', 'text-emerald-600', $reachStats['rewarded'] ?? 0],
+                    ['Flagged', 'fa-flag', 'from-red-100 to-rose-100', 'text-red-600', $reachStats['fraud'] ?? 0],
+                    ['Pending Payouts', 'fa-money-bill-wave', 'from-orange-100 to-amber-100', 'text-orange-600', $reachStats['payouts_pending'] ?? 0],
+                    ['FCM Devices', 'fa-bell', 'from-slate-100 to-gray-100', 'text-slate-600', $reachStats['fcm_devices'] ?? 0],
+                ] as [$label, $icon, $grad, $color, $value])
+                    <div class="bg-white rounded-2xl shadow-sm p-4 border border-gray-100 smooth-transition stat-card">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="text-[10px] font-medium text-gray-500 uppercase tracking-wide">{{ $label }}</p>
+                            <div class="h-7 w-7 rounded-full bg-gradient-to-r {{ $grad }} flex items-center justify-center">
+                                <i class="fas {{ $icon }} {{ $color }} text-xs"></i>
+                            </div>
+                        </div>
+                        <p class="text-xl font-bold text-gray-900">{{ $value }}</p>
+                    </div>
+                @endforeach
+            </div>
+
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
+                <!-- Recent listens -->
+                <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
+                    <div class="bg-gradient-to-r from-purple-600 to-fuchsia-500 px-6 py-4 flex items-center">
+                        <h2 class="text-lg font-bold text-white flex items-center">
+                            <i class="fas fa-headphones mr-3"></i> Recent Listens</h2>
+                    </div>
+                    <div class="divide-y divide-gray-100">
+                        @forelse (($reach['recentSessions'] ?? collect()) as $session)
+                            <div class="p-4 flex items-start gap-3">
+                                <div class="h-8 w-8 rounded-full bg-purple-50 flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-headphones text-purple-500 text-xs"></i>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center gap-2">
+                                        <p class="text-sm font-semibold text-gray-900 truncate">{{ $session->listener?->name ?? 'Unknown' }}</p>
+                                        <span class="text-xs px-2 py-0.5 rounded-full font-medium {{ $sessionStatusBadges[$session->status] ?? 'bg-gray-100' }}">
+                                            {{ ucfirst($session->status) }}
+                                        </span>
+                                        <span class="text-xs text-gray-400 ml-auto flex-shrink-0">{{ $session->completed_at?->diffForHumans() }}</span>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-0.5 truncate">on "{{ $session->campaign?->title ?? 'Untitled' }}" &bull; {{ gmdate('i:s', $session->elapsed_seconds) }} listened</p>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="text-center py-10">
+                                <i class="fas fa-headphones text-gray-300 text-2xl mb-2"></i>
+                                <p class="text-sm text-gray-500">No listens yet</p>
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+
+                <!-- Pending payouts -->
+                <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
+                    <div class="bg-gradient-to-r from-emerald-600 to-green-500 px-6 py-4 flex items-center">
+                        <h2 class="text-lg font-bold text-white flex items-center">
+                            <i class="fas fa-money-bill-wave mr-3"></i> Payouts</h2>
+                        <a href="{{ route('admin.payouts') }}"
+                            class="ml-auto text-white/80 text-xs px-3 py-1 rounded-full hover:bg-white/80 hover:text-gray-700 smooth-transition">Manage &rarr;</a>
+                    </div>
+                    <div class="divide-y divide-gray-100">
+                        @forelse (($reach['recentPayouts'] ?? collect()) as $payout)
+                            <div class="p-4 flex items-center gap-3">
+                                <div class="h-9 w-9 rounded-full {{ $payout->method === 'bank' ? 'bg-blue-50' : 'bg-cyan-50' }} flex items-center justify-center flex-shrink-0">
+                                    <i class="fas {{ $payout->method === 'bank' ? 'fa-university text-blue-600' : 'fa-phone-alt text-cyan-600' }} text-sm"></i>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center gap-2">
+                                        <p class="text-sm font-semibold text-gray-900 truncate">{{ $payout->user?->name ?? 'Unknown' }}</p>
+                                        <span class="text-xs px-2 py-0.5 rounded-full font-medium {{ $payoutStatusBadges[$payout->status] ?? 'bg-gray-100' }}">
+                                            {{ ucfirst($payout->status) }}
+                                        </span>
+                                    </div>
+                                    <p class="text-xs text-gray-400">{{ $payout->created_at?->diffForHumans() }} &bull;
+                                        @if ($payout->method === 'bank')
+                                            {{ $payout->destination['bank_code'] ?? '' }} {{ $payout->destination['account_number'] ?? '' }}
+                                        @else
+                                            {{ $payout->destination['phone'] ?? '' }}
+                                        @endif
+                                    </p>
+                                </div>
+                                <p class="text-sm font-bold text-gray-900 flex-shrink-0">₦{{ number_format($payout->amount) }}</p>
+                                @if (in_array($payout->status, ['requested', 'processing']))
+                                    <div class="flex gap-1.5 flex-shrink-0">
+                                        <form action="{{ route('admin.payouts.mark-paid', $payout) }}" method="POST">
+                                            @csrf
+                                            <button class="text-xs px-2.5 py-1 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 smooth-transition font-medium">
+                                                <i class="fas fa-check mr-1"></i>Paid
+                                            </button>
+                                        </form>
+                                        <form action="{{ route('admin.payouts.reject', $payout) }}" method="POST">
+                                            @csrf
+                                            <button class="text-xs px-2.5 py-1 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 smooth-transition font-medium">
+                                                <i class="fas fa-times mr-1"></i>Reject
+                                            </button>
+                                        </form>
+                                    </div>
+                                @endif
+                            </div>
+                        @empty
+                            <div class="text-center py-10">
+                                <i class="fas fa-money-bill-wave text-gray-300 text-2xl mb-2"></i>
+                                <p class="text-sm text-gray-500">No payouts yet</p>
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reach campaigns -->
+            <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
+                <div class="bg-gradient-to-r from-blue-600 to-indigo-500 px-6 py-4 flex items-center">
+                    <h2 class="text-lg font-bold text-white flex items-center">
+                        <i class="fas fa-bullhorn mr-3"></i> Promo Campaigns</h2>
+                    <a href="{{ route('admin.campaigns') }}"
+                        class="ml-auto text-white/80 text-xs px-3 py-1 rounded-full hover:bg-white/80 hover:text-white transition-all">All Campaigns &rarr;</a>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
+                            <tr>
+                                <th class="px-4 py-3 font-medium">Campaign</th>
+                                <th class="px-4 py-3 font-medium">Artist</th>
+                                <th class="px-4 py-3 font-medium">Status</th>
+                                <th class="px-4 py-3 font-medium">Reward</th>
+                                <th class="px-4 py-3 font-medium">Listens</th>
+                                <th class="px-4 py-3 font-medium">Created</th>
+                                <th class="px-4 py-3 font-medium text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            @forelse (($reach['promoCampaigns'] ?? collect()) as $pc)
+                                <tr class="hover:bg-gray-50 smooth-transition">
+                                    <td class="px-4 py-3 font-medium text-gray-900">{{ $pc->title }}</td>
+                                    <td class="px-4 py-3 text-gray-500">{{ $pc->artist?->name ?? 'Unknown' }}</td>
+                                    <td class="px-4 py-3">
+                                        <span class="text-xs px-2 py-1 rounded-full font-medium {{ $statusBadges[$pc->status] ?? 'bg-gray-100' }}">
+                                            {{ ucfirst(str_replace('_', ' ', $pc->status)) }}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3 text-gray-600">₦{{ $pc->reward_per_review }}</td>
+                                    <td class="px-4 py-3 text-gray-600">{{ $pc->rewarded_sessions_count }}</td>
+                                    <td class="px-4 py-3 text-gray-400">{{ $pc->created_at?->diffForHumans() }}</td>
+                                    <td class="px-4 py-3 text-right whitespace-nowrap">
+                                        @if (in_array($pc->status, ['draft', 'pending_payment', 'paused']))
+                                            <form action="{{ route('admin.campaigns.activate', $pc) }}" method="POST" class="inline">
+                                                @csrf
+                                                <button class="text-xs px-2.5 py-1 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 smooth-transition font-medium">
+                                                    <i class="fas fa-play mr-1"></i>Activate
+                                                </button>
+                                            </form>
+                                        @endif
+                                        @if ($pc->status === 'active')
+                                            <form action="{{ route('admin.campaigns.pause', $pc) }}" method="POST" class="inline">
+                                                @csrf
+                                                <button class="text-xs px-2.5 py-1 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 smooth-transition font-medium">
+                                                    <i class="fas fa-pause mr-1"></i>Pause
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7" class="px-4 py-10 text-center text-gray-500">
+                                        <i class="fas fa-bullhorn text-gray-300 text-2xl mb-2"></i>
+                                        <p>No promo campaigns yet</p>
+                                        <p class="text-xs text-gray-400">Campaigns created by artists appear here</p>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </main>
 

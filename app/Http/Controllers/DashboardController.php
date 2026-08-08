@@ -52,6 +52,34 @@ class DashboardController extends Controller
         // Campaigns
         $campaigns = Campaign::with('tracks')->withCount('assignments')->get();
 
+        // ── AudioReach command center data ────────────────────────────────────
+        $reach = [
+            'stats' => [
+                'listeners' => \App\Models\User::where('role', \App\Models\User::ROLE_LISTENER)->count(),
+                'artists' => \App\Models\User::where('role', \App\Models\User::ROLE_ARTIST)->count(),
+                'active_campaigns' => \App\Models\PromoCampaign::active()->count(),
+                'sessions_today' => \App\Models\ListenSession::whereDate('completed_at', today())->count(),
+                'rewarded' => \App\Models\ListenSession::where('status', \App\Models\ListenSession::STATUS_REWARDED)->count(),
+                'fraud' => \App\Models\ListenSession::where('status', \App\Models\ListenSession::STATUS_FRAUD)->count(),
+                'payouts_pending' => \App\Models\PayoutRequest::pending()->count(),
+                'fcm_devices' => \App\Models\UserDevice::whereNotNull('fcm_token')->where('last_seen_at', '>=', now()->subDay())->count(),
+            ],
+            'recentSessions' => \App\Models\ListenSession::with(['assignment.campaign:id,title', 'listener:id,name'])
+                ->whereNotNull('completed_at')
+                ->orderByDesc('completed_at')
+                ->limit(8)
+                ->get(),
+            'promoCampaigns' => \App\Models\PromoCampaign::with(['artist:id,name'])
+                ->withCount(['sessions as rewarded_sessions_count' => fn ($q) => $q->where('listen_sessions.status', \App\Models\ListenSession::STATUS_REWARDED)])
+                ->orderByDesc('created_at')
+                ->limit(8)
+                ->get(),
+            'recentPayouts' => \App\Models\PayoutRequest::with('user:id,name,email')
+                ->orderByDesc('created_at')
+                ->limit(6)
+                ->get(),
+        ];
+
         // Pass data to the view
         return view('dashboard', [
             'devices'               => $devices,
@@ -64,6 +92,7 @@ class DashboardController extends Controller
             'activeAssignments'     => $activeAssignments,
             'activeAssignmentCount' => $activeAssignmentCount,
             'campaigns'             => $campaigns,
+            'reach'                 => $reach,
         ]);
     }
 

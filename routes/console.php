@@ -16,3 +16,10 @@ Schedule::command('campaigns:execute')->everyMinute()->withoutOverlapping();
 // ── Premium Proxy Rotation ──────────────────────────────────────────── 
 // Automatically fetch and distribute new Elite IPs every hour.
 Schedule::command('proxies:fetch-premium')->hourly()->withoutOverlapping();
+
+// ── AudioReach: complete campaigns that hit their listen target ──────
+Schedule::command('campaigns:finalize')->everyFiveMinutes()->withoutOverlapping();
+
+// ── AudioReach: weekly payout sweep (listeners) ──────────────────────
+Schedule::job(new \App\Jobs\PayoutCycleJob)->weekly()->mondays()->at('09:00');
+

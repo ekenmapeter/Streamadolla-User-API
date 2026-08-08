@@ -29,25 +29,7 @@ class AssignmentController extends Controller
 
     public function __construct()
     {
-        $credentialsPath = base_path(config('firebase.credentials'));
-
-        if (!file_exists($credentialsPath)) {
-            $storagePath = storage_path('app');
-            $files = glob($storagePath . '/*.json');
-            foreach ($files as $file) {
-                if (str_contains($file, 'firebase-adminsdk')) {
-                    $credentialsPath = $file;
-                    break;
-                }
-            }
-        }
-
-        if (!file_exists($credentialsPath)) {
-            throw new \RuntimeException("Firebase credentials file not found.");
-        }
-
-        $factory = (new Factory)->withServiceAccount($credentialsPath);
-        $this->messaging = $factory->createMessaging();
+        $this->messaging = app(\App\Services\FirebaseMessagingService::class)->messaging();
     }
 
     public function store(Request $request)

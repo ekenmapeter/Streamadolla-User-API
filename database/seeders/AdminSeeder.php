@@ -17,6 +17,7 @@ class AdminSeeder extends Seeder
             ['email' => 'admin@streamadolla.com'],
             [
                 'name' => 'Admin',
+                'role' => 'admin',
                 'password' => Hash::make('password'), // You should change this after first login
             ]
         );

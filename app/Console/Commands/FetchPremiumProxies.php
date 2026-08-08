@@ -111,22 +111,8 @@ class FetchPremiumProxies extends Command
      */
     private function getMessaging()
     {
-        $credentialsPath = base_path(config('firebase.credentials'));
-
-        if (!file_exists($credentialsPath)) {
-            $storagePath = storage_path('app');
-            foreach (glob($storagePath . '/*.json') as $file) {
-                if (str_contains($file, 'firebase-adminsdk')) {
-                    $credentialsPath = $file;
-                    break;
-                }
-            }
-        }
-
-        if (!file_exists($credentialsPath)) return null;
-
         try {
-            return (new Factory)->withServiceAccount($credentialsPath)->createMessaging();
+            return app(\App\Services\FirebaseMessagingService::class)->messaging();
         } catch (\Exception $e) {
             return null;
         }
