@@ -182,8 +182,8 @@
                 <a href="{{ route('login') }}" class="neu-btn hidden sm:inline-block px-5 py-2.5 text-sm font-bold" style="color: var(--neu-text-strong)">
                     <i class="fas fa-user mr-2"></i>Login
                 </a>
-                <a href="{{ route('artist.signup') }}" class="neu-accent px-5 py-2.5 text-sm font-bold text-white">
-                    Start Earning
+                <a href="{{ asset('download/streamadolla-official-with-mutiple-device-v5.apk') }}" class="neu-accent px-5 py-2.5 text-sm font-bold text-white">
+                    <i class="fas fa-mobile-screen-button mr-2"></i>Get the App
                 </a>
             </div>
         </div>
@@ -193,11 +193,6 @@
     <header class="max-w-6xl mx-auto px-6 pt-16 pb-14">
         <div class="grid lg:grid-cols-2 gap-14 items-center">
             <div class="text-center lg:text-left">
-                <div class="neu-inset inline-flex items-center space-x-2 px-5 py-2 rounded-full text-sm font-semibold mb-10">
-                    <span class="h-2.5 w-2.5 rounded-full bg-green-500 animate-pulse"></span>
-                    <span>Real humans. Verified plays. Instant payouts.</span>
-                </div>
-
                 <h1 class="text-5xl md:text-6xl xl:text-7xl font-extrabold leading-[1.08] mb-6" style="color: var(--neu-text-strong)">
                     Get Paid to<br>
                     <span class="text-gradient">Listen to Music</span>
@@ -209,8 +204,8 @@
                 </p>
 
                 <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-5 mb-14">
-                    <a href="{{ route('artist.signup') }}" class="neu-accent px-10 py-4 text-base font-extrabold text-white">
-                        <i class="fas fa-headphones mr-2"></i>Start Listening &amp; Earning
+                    <a href="{{ asset('download/streamadolla-official-with-mutiple-device-v5.apk') }}" class="neu-accent px-10 py-4 text-base font-extrabold text-white">
+                        <i class="fas fa-mobile-screen-button mr-2"></i>Get the App &amp; Start Earning
                     </a>
                     <a href="#how" class="neu-btn px-10 py-4 text-base font-bold" style="color: var(--neu-text-strong)">
                         <i class="fas fa-route mr-2"></i>See the Workflow
@@ -292,8 +287,8 @@
                     <div class="neu-step p-7 flex items-start space-x-5">
                         <div class="neu-circle h-12 w-12 shrink-0 text-lg font-extrabold text-gradient">1</div>
                         <div>
-                            <h3 class="font-extrabold text-lg mb-1" style="color: var(--neu-text-strong)">Create your free account</h3>
-                            <p class="text-sm font-medium leading-relaxed">Sign up in seconds and link the streaming platforms you already use — Spotify, YouTube, YouTube Music, Audiomark and more.</p>
+                            <h3 class="font-extrabold text-lg mb-1" style="color: var(--neu-text-strong)">Get the app &amp; create your free account</h3>
+                            <p class="text-sm font-medium leading-relaxed">Download the Streamadollar app, sign up in seconds and link the streaming platforms you already use — Spotify, YouTube, YouTube Music, Audiomark and more. The app is how all earning starts.</p>
                         </div>
                     </div>
                     <div class="neu-step p-7 flex items-start space-x-5">
@@ -318,8 +313,8 @@
                         </div>
                     </div>
                 </div>
-                <a href="{{ route('artist.signup') }}" class="neu-btn mt-9 w-full py-4 text-center font-extrabold block" style="color: var(--neu-accent)">
-                    <i class="fas fa-arrow-right mr-2"></i>Join as a Listener — It's Free
+                <a href="{{ asset('download/streamadolla-official-with-mutiple-device-v5.apk') }}" class="neu-btn mt-9 w-full py-4 text-center font-extrabold block" style="color: var(--neu-accent)">
+                    <i class="fas fa-mobile-screen-button mr-2"></i>Get the App — Start Earning Free
                 </a>
             </div>
 
@@ -515,8 +510,8 @@
             </h2>
             <p class="font-medium max-w-xl mx-auto mb-10">Join thousands of listeners earning while they stream — and give artists the real plays they deserve.</p>
             <div class="flex flex-col sm:flex-row items-center justify-center gap-5">
-                <a href="{{ route('artist.signup') }}" class="neu-accent px-10 py-4 font-extrabold text-white">
-                    <i class="fas fa-headphones mr-2"></i>Create Free Account
+                <a href="{{ asset('download/streamadolla-official-with-mutiple-device-v5.apk') }}" class="neu-accent px-10 py-4 font-extrabold text-white">
+                    <i class="fas fa-mobile-screen-button mr-2"></i>Download the App
                 </a>
                 <a href="{{ route('login') }}" class="neu-btn px-10 py-4 font-extrabold" style="color: var(--neu-text-strong)">
                     <i class="fas fa-sign-in-alt mr-2"></i>Artist Login
@@ -550,9 +545,8 @@
                 Photos by <a href="https://unsplash.com" target="_blank" rel="noopener" class="underline hover:opacity-100">Unsplash</a> (free license)
             </div>
             <div class="flex items-center space-x-6">
-                <a href="{{ route('login') }}" class="hover:opacity-100 transition">Listener Login</a>
+                <a href="{{ asset('download/streamadolla-official-with-mutiple-device-v5.apk') }}" class="hover:opacity-100 transition"><i class="fas fa-mobile-screen-button mr-1"></i>Get the App</a>
                 <a href="{{ route('artist.signup') }}" class="hover:opacity-100 transition">Artist Signup</a>
-                <a href="{{ route('login') }}" class="hover:opacity-100 transition"><i class="fas fa-lock mr-1"></i>Admin</a>
             </div>
         </div>
     </footer>
