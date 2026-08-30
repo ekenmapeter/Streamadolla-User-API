@@ -82,6 +82,7 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/register', [AuthController::class, 'register']);
     Route::post('/auth/verify-email', [AuthController::class, 'verifyEmail']);
     Route::post('/auth/login', [AuthController::class, 'login']);
+    Route::get('/app/latest', [SettingsController::class, 'latest']);
     Route::post('/webhooks/paystack', [PaystackWebhookController::class, 'handle']);
 
     // Authenticated (listener only)

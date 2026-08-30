@@ -146,4 +146,28 @@ class ListenerActivityTest extends TestCase
             @unlink($apkPath);
         }
     }
+
+    public function test_app_latest_is_public_and_returns_apk(): void
+    {
+        $this->seed(\Database\Seeders\AudioReachSeeder::class);
+
+        $apkPath = public_path('download/test-update-9.9.9.apk');
+        @mkdir(dirname($apkPath), 0777, true);
+        file_put_contents($apkPath, 'fake-apk-bytes');
+        touch($apkPath, now()->addHour()->timestamp);
+
+        try {
+            $response = $this->getJson('/api/v1/app/latest', [
+                'X-App-Version' => '1.0.0',
+            ])->assertOk()
+                ->assertJsonPath('app_version', '1.0.0')
+                ->assertJsonPath('force_update', false);
+
+            $apk = $response->json('apk');
+            $this->assertNotNull($apk);
+            $this->assertStringContainsString('test-update-9.9.9.apk', $apk['url']);
+        } finally {
+            @unlink($apkPath);
+        }
+    }
 }
