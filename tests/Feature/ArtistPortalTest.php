@@ -23,7 +23,7 @@ class ArtistPortalTest extends TestCase
 
     public function test_landing_page_renders(): void
     {
-        $this->get('/')->assertOk()->assertSee('AudioReach');
+        $this->get('/')->assertOk()->assertSee('Streamadollar');
     }
 
     public function test_artist_signup_creates_user_and_profile(): void
