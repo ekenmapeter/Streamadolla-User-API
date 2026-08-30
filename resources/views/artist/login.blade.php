@@ -11,54 +11,79 @@
     @include('_partials.neu')
 </head>
 
-<body class="min-h-screen flex items-center justify-center p-4">
-    <div class="max-w-md w-full">
-        <div class="text-center mb-8">
-            <a href="{{ route('landing') }}" class="inline-flex items-center space-x-3">
-                <div class="neu-circle h-12 w-12">
-                    <i class="fas fa-music text-xl" style="color: var(--neu-accent)"></i>
+<body class="min-h-screen flex items-center justify-center p-4 lg:p-8">
+    <div class="max-w-5xl w-full grid lg:grid-cols-2 gap-10 items-center">
+
+        {{-- Image side --}}
+        <div class="hidden lg:block relative">
+            <div class="neu p-4">
+                <img
+                    src="https://images.unsplash.com/photo-1511379938547-c1f69419868d?q=80&w=1200&auto=format&fit=crop"
+                    alt="Artist in a recording studio"
+                    class="rounded-3xl w-full object-cover aspect-[4/5]"
+                    loading="lazy">
+            </div>
+            <div class="neu-sm absolute -bottom-6 left-1/2 -translate-x-1/2 px-6 py-4 text-center whitespace-nowrap">
+                <p class="text-xs font-bold tracking-widest opacity-60 mb-1">PLAYS DELIVERED</p>
+                <p class="text-xl font-extrabold text-gradient">2.1M+</p>
+            </div>
+            <a href="{{ route('landing') }}" class="inline-flex items-center space-x-3 absolute -top-8 left-2">
+                <div class="neu-circle h-11 w-11">
+                    <i class="fas fa-music text-lg" style="color: var(--neu-accent)"></i>
                 </div>
-                <span class="text-2xl font-extrabold" style="color: var(--neu-text-strong)">Streama<span class="text-gradient">dollar</span></span>
+                <span class="text-xl font-extrabold" style="color: var(--neu-text-strong)">Streama<span class="text-gradient">dollar</span></span>
             </a>
-            <h1 class="text-2xl font-extrabold mt-6" style="color: var(--neu-text-strong)">Welcome back</h1>
-            <p class="text-sm font-semibold mt-2 opacity-60">Sign in to your artist dashboard</p>
         </div>
 
-        <div class="neu p-8">
-            <form action="{{ route('login.submit') }}" method="POST">
-                @csrf
+        {{-- Form side --}}
+        <div class="max-w-md w-full mx-auto">
+            <div class="text-center lg:text-left mb-8">
+                <a href="{{ route('landing') }}" class="lg:hidden inline-flex items-center space-x-3 mb-6">
+                    <div class="neu-circle h-12 w-12">
+                        <i class="fas fa-music text-xl" style="color: var(--neu-accent)"></i>
+                    </div>
+                    <span class="text-2xl font-extrabold" style="color: var(--neu-text-strong)">Streama<span class="text-gradient">dollar</span></span>
+                </a>
+                <h1 class="text-3xl font-extrabold" style="color: var(--neu-text-strong)">Welcome back</h1>
+                <p class="text-sm font-semibold mt-2 opacity-60">Sign in to your artist dashboard</p>
+            </div>
 
-                @if (session('status'))
-                    <div class="mb-6 neu-sm px-5 py-3 text-sm font-bold" style="color: #16a34a"><i class="fas fa-circle-check mr-2"></i>{{ session('status') }}</div>
-                @endif
+            <div class="neu p-8">
+                <form action="{{ route('login.submit') }}" method="POST">
+                    @csrf
 
-                <div class="mb-5">
-                    <label class="block text-sm font-bold mb-2" style="color: var(--neu-text-strong)">Email Address</label>
-                    <input type="email" name="email" value="{{ old('email') }}" required
-                        class="neu-input"
-                        placeholder="you@example.com">
-                    @error('email')
-                        <p class="text-xs font-semibold mt-2" style="color: #dc2626">{{ $message }}</p>
-                    @enderror
-                </div>
+                    @if (session('status'))
+                        <div class="mb-6 neu-sm px-5 py-3 text-sm font-bold" style="color: #16a34a"><i class="fas fa-circle-check mr-2"></i>{{ session('status') }}</div>
+                    @endif
 
-                <div class="mb-8">
-                    <label class="block text-sm font-bold mb-2" style="color: var(--neu-text-strong)">Password</label>
-                    <input type="password" name="password" required
-                        class="neu-input"
-                        placeholder="••••••••">
-                </div>
+                    <div class="mb-5">
+                        <label class="block text-sm font-bold mb-2" style="color: var(--neu-text-strong)">Email Address</label>
+                        <input type="email" name="email" value="{{ old('email') }}" required
+                            class="neu-input"
+                            placeholder="you@example.com">
+                        @error('email')
+                            <p class="text-xs font-semibold mt-2" style="color: #dc2626">{{ $message }}</p>
+                        @enderror
+                    </div>
 
-                <button type="submit" class="neu-accent w-full py-4 font-extrabold text-white">
-                    <i class="fas fa-sign-in-alt mr-2"></i>Sign In
-                </button>
-            </form>
+                    <div class="mb-8">
+                        <label class="block text-sm font-bold mb-2" style="color: var(--neu-text-strong)">Password</label>
+                        <input type="password" name="password" required
+                            class="neu-input"
+                            placeholder="••••••••">
+                    </div>
+
+                    <button type="submit" class="neu-accent w-full py-4 font-extrabold text-white">
+                        <i class="fas fa-sign-in-alt mr-2"></i>Sign In
+                    </button>
+                </form>
+            </div>
+
+            <p class="text-center mt-6 text-sm font-semibold opacity-70">
+                New to Streamadollar?
+                <a href="{{ route('artist.signup') }}" class="font-extrabold" style="color: var(--neu-accent)">Create an account</a>
+            </p>
         </div>
-
-        <p class="text-center mt-6 text-sm font-semibold opacity-70">
-            New to Streamadollar?
-            <a href="{{ route('artist.signup') }}" class="font-extrabold" style="color: var(--neu-accent)">Create an account</a>
-        </p>
     </div>
 </body>
 

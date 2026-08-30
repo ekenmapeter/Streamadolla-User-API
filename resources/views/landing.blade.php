@@ -180,7 +180,7 @@
             </div>
             <div class="flex items-center space-x-3">
                 <a href="{{ route('login') }}" class="neu-btn hidden sm:inline-block px-5 py-2.5 text-sm font-bold" style="color: var(--neu-text-strong)">
-                    <i class="fas fa-user mr-2"></i>Login
+                    <i class="fas fa-user mr-2"></i>Artist Login
                 </a>
                 <a href="{{ asset('download/streamadolla-official-with-mutiple-device-v5.apk') }}" class="neu-accent px-5 py-2.5 text-sm font-bold text-white">
                     <i class="fas fa-mobile-screen-button mr-2"></i>Get the App
