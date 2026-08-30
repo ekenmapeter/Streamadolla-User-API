@@ -11,7 +11,10 @@
     @include('_partials.neu')
 </head>
 
-<body class="min-h-screen flex items-center justify-center p-4">
+<body class="min-h-screen">
+    @include('_partials.guest-nav')
+
+    <main class="min-h-[calc(100vh-96px)] flex items-center justify-center p-4">
     <div class="max-w-md w-full">
         <div class="text-center mb-8">
             <div class="neu-circle h-14 w-14 mx-auto text-2xl">📧</div>
@@ -53,6 +56,7 @@
             <a href="{{ route('login') }}" class="font-extrabold" style="color: var(--neu-accent)">Back to login</a>
         </p>
     </div>
+    </main>
 </body>
 
 </html>

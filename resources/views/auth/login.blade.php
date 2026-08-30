@@ -11,7 +11,10 @@
     @include('_partials.neu')
 </head>
 
-<body class="min-h-screen flex items-center justify-center p-4">
+<body class="min-h-screen">
+    @include('_partials.guest-nav')
+
+    <main class="min-h-[calc(100vh-96px)] flex items-center justify-center p-4">
     <div class="max-w-md w-full">
         <div class="text-center mb-10">
             <div class="neu-circle h-20 w-20 mx-auto mb-6">
@@ -72,6 +75,7 @@
             &copy; {{ date('Y') }} Streamadollar — Listen. Earn. Repeat.
         </p>
     </div>
+    </main>
 </body>
 
 </html>

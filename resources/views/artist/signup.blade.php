@@ -11,7 +11,10 @@
     @include('_partials.neu')
 </head>
 
-<body class="min-h-screen flex items-center justify-center p-4 lg:p-8">
+<body class="min-h-screen">
+    @include('_partials.guest-nav')
+
+    <main class="min-h-[calc(100vh-96px)] flex items-center justify-center p-4 lg:p-8">
     <div class="max-w-5xl w-full grid lg:grid-cols-2 gap-10 items-center">
 
         {{-- Image side --}}
@@ -27,23 +30,11 @@
                 <p class="text-xs font-bold tracking-widest opacity-60 mb-1">LISTENERS EARNING</p>
                 <p class="text-xl font-extrabold text-gradient">12,400+</p>
             </div>
-            <a href="{{ route('landing') }}" class="inline-flex items-center space-x-3 absolute -top-8 left-2">
-                <div class="neu-circle h-11 w-11">
-                    <i class="fas fa-music text-lg" style="color: var(--neu-accent)"></i>
-                </div>
-                <span class="text-xl font-extrabold" style="color: var(--neu-text-strong)">Streama<span class="text-gradient">dollar</span></span>
-            </a>
         </div>
 
         {{-- Form side --}}
         <div class="max-w-md w-full mx-auto">
             <div class="text-center lg:text-left mb-8">
-                <a href="{{ route('landing') }}" class="lg:hidden inline-flex items-center space-x-3 mb-6">
-                    <div class="neu-circle h-12 w-12">
-                        <i class="fas fa-music text-xl" style="color: var(--neu-accent)"></i>
-                    </div>
-                    <span class="text-2xl font-extrabold" style="color: var(--neu-text-strong)">Streama<span class="text-gradient">dollar</span></span>
-                </a>
                 <h1 class="text-3xl font-extrabold" style="color: var(--neu-text-strong)">Create your artist account</h1>
                 <p class="text-sm font-semibold mt-2 opacity-60">Real listeners. Real plays. Real promotion.</p>
             </div>
@@ -122,6 +113,7 @@
             </p>
         </div>
     </div>
+    </main>
 </body>
 
 </html>
