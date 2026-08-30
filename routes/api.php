@@ -69,6 +69,7 @@ Route::middleware(['api.key'])->group(function () {
 |--------------------------------------------------------------------------
 */
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\ActivityController;
 use App\Http\Controllers\Api\V1\FeedController;
 use App\Http\Controllers\Api\V1\ListenController;
 use App\Http\Controllers\Api\V1\WalletController;
@@ -90,6 +91,7 @@ Route::prefix('v1')->group(function () {
         Route::put('/me', [AuthController::class, 'updateMe']);
 
         Route::get('/feed', [FeedController::class, 'index']);
+        Route::get('/activities', [ActivityController::class, 'index']);
         Route::post('/listen/{campaign}/start', [ListenController::class, 'start']);
         Route::post('/listen/{session}/checkpoint', [ListenController::class, 'checkpoint']);
         Route::post('/listen/{session}/complete', [ListenController::class, 'complete']);

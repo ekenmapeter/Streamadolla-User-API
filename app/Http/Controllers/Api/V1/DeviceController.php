@@ -62,7 +62,10 @@ class DeviceController extends Controller
             ->first();
 
         if ($device) {
-            $device->update(['last_seen_at' => now()]);
+            $device->update([
+                'last_seen_at' => now(),
+                'free_move' => $request->boolean('free_move', $device->free_move),
+            ]);
         }
 
         return response()->json([

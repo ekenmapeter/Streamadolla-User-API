@@ -16,12 +16,14 @@ class UserDevice extends Model
         'fcm_token',
         'platform',
         'app_version',
+        'free_move',
         'last_seen_at',
     ];
 
     protected function casts(): array
     {
         return [
+            'free_move' => 'boolean',
             'last_seen_at' => 'datetime',
         ];
     }

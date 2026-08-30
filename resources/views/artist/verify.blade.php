@@ -50,6 +50,23 @@
                     <i class="fas fa-shield-halved mr-2"></i>Verify Email
                 </button>
             </form>
+
+            {{-- Resend code --}}
+            <div class="mt-8 text-center pt-6" style="border-top: 1px solid rgba(75,90,114,.12)">
+                <p class="text-sm font-semibold opacity-60 mb-3">Didn't get the code?</p>
+                <form action="{{ route('artist.verify.resend') }}" method="POST">
+                    @csrf
+                    <input type="hidden" name="email" value="{{ $email ?? '' }}">
+                    <button type="submit" id="resend-btn"
+                        class="neu-btn px-7 py-3 text-sm font-extrabold {{ $resendAfter > 0 ? 'opacity-50 pointer-events-none' : '' }}"
+                        style="color: var(--neu-accent)">
+                        <i class="fas fa-paper-plane mr-2"></i>Resend Code
+                    </button>
+                </form>
+                <p id="countdown" class="text-xs font-bold mt-3 opacity-60" style="display: {{ $resendAfter > 0 ? 'block' : 'none' }}">
+                    You can request a new code in <span id="countdown-timer" style="color: var(--neu-accent)">05:00</span>
+                </p>
+            </div>
         </div>
 
         <p class="text-center mt-6 text-sm font-semibold opacity-70">
@@ -57,6 +74,28 @@
         </p>
     </div>
     </main>
+
+    <script>
+        let remaining = {{ $resendAfter }};
+        const timer = document.getElementById('countdown-timer');
+        const btn = document.getElementById('resend-btn');
+        const countdown = document.getElementById('countdown');
+
+        if (remaining > 0) {
+            const interval = setInterval(() => {
+                remaining--;
+                if (remaining <= 0) {
+                    clearInterval(interval);
+                    countdown.style.display = 'none';
+                    btn.classList.remove('opacity-50', 'pointer-events-none');
+                } else {
+                    const m = String(Math.floor(remaining / 60)).padStart(2, '0');
+                    const s = String(remaining % 60).padStart(2, '0');
+                    timer.textContent = m + ':' + s;
+                }
+            }, 1000);
+        }
+    </script>
 </body>
 
 </html>

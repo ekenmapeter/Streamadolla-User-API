@@ -47,6 +47,7 @@ class ArtistAuthController extends Controller
         ]);
 
         $verification->issueCode($user);
+        $verification->setResendCooldown($user);
 
         return redirect()->route('artist.verify', ['email' => $user->email])
             ->with('status', 'Account created! Enter the 6-digit code sent to your email.');
@@ -58,8 +59,17 @@ class ArtistAuthController extends Controller
             return redirect()->route('artist.dashboard');
         }
 
+        $email = $request->query('email', $request->user()?->email ?? '');
+
+        $resendAfter = 0;
+        $user = $email ? User::where('email', strtolower($email))->first() : null;
+        if ($user && ! $user->email_verified_at) {
+            $resendAfter = app(EmailVerificationService::class)->resendAfter($user);
+        }
+
         return view('artist.verify', [
-            'email' => $request->query('email', $request->user()?->email ?? ''),
+            'email' => $email,
+            'resendAfter' => $resendAfter,
         ]);
     }
 
@@ -88,6 +98,37 @@ class ArtistAuthController extends Controller
 
         return redirect()->route('artist.dashboard')
             ->with('status', 'Email verified. Welcome aboard!');
+    }
+
+    public function resendCode(Request $request, EmailVerificationService $verification)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email|exists:users,email',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
+
+        $user = User::where('email', strtolower($request->email))->firstOrFail();
+
+        if ($user->role !== User::ROLE_ARTIST) {
+            abort(403);
+        }
+
+        if ($user->email_verified_at) {
+            return redirect()->route('artist.dashboard');
+        }
+
+        $wait = $verification->resendAfter($user);
+        if ($wait > 0) {
+            return back()->withErrors(['code' => 'Please wait ' . ceil($wait / 60) . ' minute(s) before requesting a new code.'])->withInput();
+        }
+
+        $verification->issueCode($user);
+        $verification->setResendCooldown($user);
+
+        return back()->with('status', 'A new verification code has been sent to your email.');
     }
 
     public function showLogin()

@@ -16,6 +16,7 @@ Route::get('/artists/signup', [ArtistAuthController::class, 'showSignup'])->name
 Route::post('/artists/signup', [ArtistAuthController::class, 'signup'])->name('artist.signup.submit');
 Route::get('/artists/verify', [ArtistAuthController::class, 'showVerify'])->name('artist.verify');
 Route::post('/artists/verify', [ArtistAuthController::class, 'verify'])->name('artist.verify.submit');
+Route::post('/artists/verify/resend', [ArtistAuthController::class, 'resendCode'])->name('artist.verify.resend');
 
 // Auth Routes
 Route::get('/login', [ArtistAuthController::class, 'showLogin'])->name('login');

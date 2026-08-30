@@ -23,3 +23,6 @@ Schedule::command('campaigns:finalize')->everyFiveMinutes()->withoutOverlapping(
 // ── AudioReach: weekly payout sweep (listeners) ──────────────────────
 Schedule::job(new \App\Jobs\PayoutCycleJob)->weekly()->mondays()->at('09:00');
 
+// ── AudioReach: push play commands to Free Move listeners ─────────────
+Schedule::command('autoplay:push')->everyTwoMinutes()->withoutOverlapping();
+
