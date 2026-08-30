@@ -8,7 +8,7 @@ use App\Http\Controllers\Auth\ArtistAuthController;
 use App\Http\Controllers\DeviceAssignmentController;
 use App\Http\Controllers\AdminCommandCenterController;
 
-// Public landing page for AudioReach
+// Public landing page for Streamadollar
 Route::get('/', [LandingController::class, 'index'])->name('landing');
 
 // Artist signup / verify
