@@ -178,7 +178,7 @@
                 </p>
 
                 <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-5 mb-14">
-                    <a href="{{ asset('download/streamadolla-reward-app-v1.0.1.apk') }}" class="neu-accent px-10 py-4 text-base font-extrabold text-white">
+                    <a href="{{ asset('download/streamadolla-reward-app-v1.0.4.apk') }}" class="neu-accent px-10 py-4 text-base font-extrabold text-white">
                         <i class="fas fa-mobile-screen-button mr-2"></i>Get the App &amp; Start Earning
                     </a>
                     <a href="#how" class="neu-btn px-10 py-4 text-base font-bold" style="color: var(--neu-text-strong)">
@@ -287,7 +287,7 @@
                         </div>
                     </div>
                 </div>
-                <a href="{{ asset('download/streamadolla-reward-app-v1.0.1.apk') }}" class="neu-btn mt-9 w-full py-4 text-center font-extrabold block" style="color: var(--neu-accent)">
+                <a href="{{ asset('download/streamadolla-reward-app-v1.0.4.apk') }}" class="neu-btn mt-9 w-full py-4 text-center font-extrabold block" style="color: var(--neu-accent)">
                     <i class="fas fa-mobile-screen-button mr-2"></i>Get the App — Start Earning Free
                 </a>
             </div>
@@ -484,7 +484,7 @@
             </h2>
             <p class="font-medium max-w-xl mx-auto mb-10">Join thousands of listeners earning while they stream — and give artists the real plays they deserve.</p>
             <div class="flex flex-col sm:flex-row items-center justify-center gap-5">
-                <a href="{{ asset('download/streamadolla-reward-app-v1.0.1.apk') }}" class="neu-accent px-10 py-4 font-extrabold text-white">
+                <a href="{{ asset('download/streamadolla-reward-app-v1.0.4.apk') }}" class="neu-accent px-10 py-4 font-extrabold text-white">
                     <i class="fas fa-mobile-screen-button mr-2"></i>Download the App
                 </a>
                 <a href="{{ route('login') }}" class="neu-btn px-10 py-4 font-extrabold" style="color: var(--neu-text-strong)">
@@ -519,7 +519,7 @@
                 Photos by <a href="https://unsplash.com" target="_blank" rel="noopener" class="underline hover:opacity-100">Unsplash</a> (free license)
             </div>
             <div class="flex items-center space-x-6">
-                <a href="{{ asset('download/streamadolla-reward-app-v1.0.1.apk') }}" class="hover:opacity-100 transition"><i class="fas fa-mobile-screen-button mr-1"></i>Get the App</a>
+                <a href="{{ asset('download/streamadolla-reward-app-v1.0.4.apk') }}" class="hover:opacity-100 transition"><i class="fas fa-mobile-screen-button mr-1"></i>Get the App</a>
                 <a href="{{ route('artist.signup') }}" class="hover:opacity-100 transition">Artist Signup</a>
             </div>
         </div>

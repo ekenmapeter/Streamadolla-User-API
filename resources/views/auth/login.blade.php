@@ -59,7 +59,7 @@
         </div>
 
         <div class="mt-10 flex justify-center">
-            <a href="{{ asset('download/streamadolla-reward-app-v1.0.1.apk') }}"
+            <a href="{{ asset('download/streamadolla-reward-app-v1.0.4.apk') }}"
                 class="neu-btn flex items-center space-x-4 px-8 py-4">
                 <div class="neu-circle h-12 w-12" style="color: var(--neu-accent)">
                     <i class="fas fa-mobile-screen-button text-xl"></i>

@@ -22,7 +22,7 @@
                     <i class="fas fa-user mr-2"></i>Artist Login
                 </a>
             @endif
-            <a href="{{ asset('download/streamadolla-reward-app-v1.0.1.apk') }}" class="neu-accent px-5 py-2.5 text-sm font-bold text-white">
+            <a href="{{ asset('download/streamadolla-reward-app-v1.0.4.apk') }}" class="neu-accent px-5 py-2.5 text-sm font-bold text-white">
                 <i class="fas fa-mobile-screen-button mr-2"></i>Get the App
             </a>
         </div>
