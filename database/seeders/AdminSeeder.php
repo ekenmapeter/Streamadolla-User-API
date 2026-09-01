@@ -14,11 +14,11 @@ class AdminSeeder extends Seeder
     public function run(): void
     {
         User::updateOrCreate(
-            ['email' => 'admin@streamadolla.com'],
+            ['email' => 'admin-user-app@streamadolla.com'],
             [
                 'name' => 'Admin',
                 'role' => 'admin',
-                'password' => Hash::make('password'), // You should change this after first login
+                'password' => Hash::make('password$$$'), // You should change this after first login
             ]
         );
     }
