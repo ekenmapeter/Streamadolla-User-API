@@ -161,7 +161,7 @@ class ArtistAuthController extends Controller
             Auth::login($user);
             $request->session()->regenerate();
 
-            return redirect()->route('dashboard');
+            return redirect()->route('admin.center');
         }
 
         if ($user->role !== User::ROLE_ARTIST) {
@@ -190,6 +190,6 @@ class ArtistAuthController extends Controller
 
     private function redirectToDashboard(User $user)
     {
-        return redirect($user->isAdmin() ? route('dashboard') : route('artist.dashboard'));
+        return redirect($user->isAdmin() ? route('admin.center') : route('artist.dashboard'));
     }
 }
