@@ -100,7 +100,7 @@ class ListenerActivityTest extends TestCase
             ->assertJsonPath('today_completed', 1)
             ->assertJsonCount(1, 'sessions')
             ->assertJsonPath('sessions.0.campaign_title', 'Hot Single')
-            ->assertJsonPath('sessions.0.reward', 150);
+            ->assertJsonPath('sessions.0.reward', 100);
     }
 
     public function test_heartbeat_updates_free_move_flag(): void

@@ -37,6 +37,7 @@ class AuthController extends Controller
             'role' => User::ROLE_LISTENER,
             'phone' => $request->phone,
             'status' => 'active',
+            'ip_address' => $request->ip(),
         ]);
 
         ListenerProfile::create([
@@ -123,6 +124,13 @@ class AuthController extends Controller
             ], 403);
         }
 
+        if ($user->status !== 'active') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your account has been suspended. Contact support for help.',
+            ], 403);
+        }
+
         if (! $user->email_verified_at) {
             return response()->json([
                 'success' => false,
@@ -132,6 +140,8 @@ class AuthController extends Controller
         }
 
         $token = $user->createToken('listener-mobile')->plainTextToken;
+
+        $user->update(['ip_address' => $request->ip()]);
 
         return response()->json([
             'success' => true,

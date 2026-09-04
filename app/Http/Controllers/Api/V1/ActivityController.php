@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\CountryReward;
 use App\Models\ListenSession;
 use App\Models\PayoutRequest;
 use App\Models\User;
@@ -25,7 +26,8 @@ class ActivityController extends Controller
                 'campaign_id' => $s->assignment?->campaign_id,
                 'campaign_title' => $s->assignment?->campaign?->title,
                 'artist' => $s->assignment?->campaign?->artist?->name,
-                'reward' => (int) ($s->assignment?->campaign?->reward_per_review ?? 0),
+                'reward' => CountryReward::amountFor($s->country_code),
+                'country_code' => $s->country_code,
                 'status' => $s->status,
                 'elapsed_seconds' => (int) $s->elapsed_seconds,
                 'completed_at' => $s->completed_at?->toIso8601String(),

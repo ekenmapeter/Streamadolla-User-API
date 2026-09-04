@@ -39,6 +39,7 @@ class ArtistAuthController extends Controller
             'role' => User::ROLE_ARTIST,
             'phone' => $request->phone,
             'status' => 'active',
+            'ip_address' => $request->ip(),
         ]);
 
         ArtistProfile::create([
@@ -94,6 +95,7 @@ class ArtistAuthController extends Controller
             return back()->withErrors(['code' => 'Invalid or expired verification code.'])->withInput();
         }
 
+        $user->update(['ip_address' => $request->ip()]);
         Auth::login($user);
 
         return redirect()->route('artist.dashboard')
@@ -157,7 +159,12 @@ class ArtistAuthController extends Controller
             return back()->withErrors(['email' => 'Invalid credentials.'])->withInput();
         }
 
+        if ($user->status !== 'active') {
+            return back()->withErrors(['email' => 'Your account has been suspended. Contact support for help.'])->withInput();
+        }
+
         if ($user->role === User::ROLE_ADMIN) {
+            $user->update(['ip_address' => $request->ip()]);
             Auth::login($user);
             $request->session()->regenerate();
 
@@ -168,6 +175,7 @@ class ArtistAuthController extends Controller
             return back()->withErrors(['email' => 'This account cannot access the artist portal.'])->withInput();
         }
 
+        $user->update(['ip_address' => $request->ip()]);
         Auth::login($user);
         $request->session()->regenerate();
 

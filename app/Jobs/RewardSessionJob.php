@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\CountryReward;
 use App\Models\ListenSession;
 use App\Models\WalletTransaction;
 use App\Services\WalletService;
@@ -39,7 +40,7 @@ class RewardSessionJob implements ShouldQueue
             return;
         }
 
-        $reward = (int) ($session->assignment?->campaign?->reward_per_review ?? 0);
+        $reward = CountryReward::amountFor($session->country_code);
 
         if ($reward <= 0) {
             return;
@@ -48,6 +49,7 @@ class RewardSessionJob implements ShouldQueue
         $transaction = $wallet->credit($session->listener, $reward, WalletTransaction::TYPE_REWARD, [
             'session_id' => $session->id,
             'campaign_id' => $session->assignment->campaign_id,
+            'country_code' => $session->country_code,
         ]);
 
         $session->listener?->listenerProfile?->addEarnings($reward);

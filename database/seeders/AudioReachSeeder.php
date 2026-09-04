@@ -27,6 +27,7 @@ class AudioReachSeeder extends Seeder
         $settings = [
             ['listen_min_seconds', 30, 'rewards', 'Minimum listen duration before a session can be completed'],
             ['reward_per_review', 150, 'rewards', 'Default reward paid per verified listen (override per-campaign)'],
+            ['reward_per_listen_default', 100, 'rewards', 'Default reward per listen for countries without a configured rate'],
             ['min_payout', 1000, 'rewards', 'Minimum wallet balance required to request a payout'],
             ['payout_hold_hours', 72, 'rewards', 'Holding period before payouts can be processed'],
             ['daily_review_limit', 50, 'limits', 'Max paid listens a listener can complete per day'],
@@ -39,6 +40,22 @@ class AudioReachSeeder extends Seeder
             AppSetting::updateOrCreate(
                 ['key' => $key],
                 ['value' => $value, 'group' => $group, 'description' => $description]
+            );
+        }
+
+        $countries = [
+            ['NG', 'Nigeria', 100],
+            ['GH', 'Ghana', 80],
+            ['US', 'United States', 200],
+            ['GB', 'United Kingdom', 200],
+            ['ZA', 'South Africa', 100],
+            ['KE', 'Kenya', 60],
+        ];
+
+        foreach ($countries as [$code, $name, $amount]) {
+            \App\Models\CountryReward::updateOrCreate(
+                ['country_code' => $code],
+                ['country_name' => $name, 'amount_per_listen' => $amount, 'is_active' => true]
             );
         }
     }

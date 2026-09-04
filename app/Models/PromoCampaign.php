@@ -37,6 +37,8 @@ class PromoCampaign extends Model
         'ends_at',
         'funded_at',
         'completed_at',
+        'payment_reference',
+        'amount_paid_ngn',
     ];
 
     protected function casts(): array

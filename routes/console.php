@@ -26,3 +26,6 @@ Schedule::job(new \App\Jobs\PayoutCycleJob)->weekly()->mondays()->at('09:00');
 // ── AudioReach: push play commands to Free Move listeners ─────────────
 Schedule::command('autoplay:push')->everyTwoMinutes()->withoutOverlapping();
 
+// ── AudioReach: refresh the offline Geo-IP country database (weekly) ──
+Schedule::command('geoip:update')->weekly()->sundays()->at('03:00');
+

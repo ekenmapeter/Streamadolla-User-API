@@ -20,8 +20,21 @@
                 @forelse ($payouts as $payout)
                     <tr class="border-b border-white/5">
                         <td class="px-6 py-4">
-                            <p class="font-semibold">{{ $payout->user?->name ?? '—' }}</p>
+                            <p class="font-semibold">
+                                @if ($payout->user)
+                                    <a href="{{ route('admin.listeners.detail', $payout->user) }}" class="hover:text-purple-400 transition">{{ $payout->user->name }}</a>
+                                @else
+                                    —
+                                @endif
+                            </p>
                             <p class="text-xs text-gray-500">{{ $payout->user?->email }}</p>
+                            <p class="text-xs text-gray-600 mt-0.5">
+                                @if ($payout->user?->phone)<i class="fas fa-phone mr-1 text-gray-700"></i>{{ $payout->user->phone }}@endif
+                                @if ($payout->user?->ip_address)
+                                    @if ($payout->user->phone) · @endif
+                                    <i class="fas fa-globe mr-1 text-gray-700"></i><span class="font-mono">{{ $payout->user->ip_address }}</span>
+                                @endif
+                            </p>
                         </td>
                         <td class="px-6 py-4 font-bold">₦{{ number_format($payout->amount) }}</td>
                         <td class="px-6 py-4 capitalize">{{ $payout->method }}</td>

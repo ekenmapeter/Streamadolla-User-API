@@ -21,6 +21,8 @@ class ListenSession extends Model
         'listener_id',
         'assignment_id',
         'session_token',
+        'country_code',
+        'ip_address',
         'min_duration_seconds',
         'elapsed_seconds',
         'checkpoints',

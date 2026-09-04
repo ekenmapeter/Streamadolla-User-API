@@ -184,13 +184,13 @@ class ListenerWalletFlowTest extends TestCase
         $this->assertDatabaseHas('wallet_transactions', [
             'user_id' => $listener->id,
             'type' => 'reward',
-            'amount' => 150,
+            'amount' => 100,
         ]);
 
-        // 4. Wallet reflects the reward
+        // 4. Wallet reflects the reward (country default rate, test IP is localhost)
         $this->getJson('/api/v1/wallet', $headers)
             ->assertOk()
-            ->assertJson(['balance' => 150]);
+            ->assertJson(['balance' => 100]);
 
         // 5. Payout request (now above the lowered minimum)
         $this->postJson('/api/v1/wallet/payout-request', [
@@ -223,7 +223,7 @@ class ListenerWalletFlowTest extends TestCase
             'listener_id' => $listener->id,
             'status' => CampaignAssignment::STATUS_ASSIGNED,
         ]);
-        $reward = $campaign->reward_per_review;
+        $reward = \App\Models\CountryReward::amountFor(null);
 
         $session = \App\Models\ListenSession::create([
             'listener_id' => $listener->id,

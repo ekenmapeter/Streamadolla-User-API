@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AppSetting;
+use App\Models\CampaignPackage;
 use App\Models\ListenSession;
 use App\Models\ListenerProfile;
 use App\Models\PromoCampaign;
@@ -49,6 +50,58 @@ class AdminCommandCenterController extends Controller
         return view('admin.campaigns', compact('campaigns'));
     }
 
+    public function createCampaign()
+    {
+        $artists = User::where('role', User::ROLE_ARTIST)->orderBy('name')->get(['id', 'name', 'email']);
+        $packages = CampaignPackage::where('is_active', true)->get();
+
+        return view('admin.campaign-create', compact('artists', 'packages'));
+    }
+
+    public function storeCampaign(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'artist_id' => 'required|exists:users,id',
+            'title' => 'required|string|max:200',
+            'track_url' => 'required|url|max:500',
+            'platform' => 'required|in:youtube,spotify,audiomack,boomplay,apple_music,other',
+            'genres' => 'nullable|array',
+            'genres.*' => 'string|max:50',
+            'package_id' => 'required|exists:campaign_packages,id',
+            'starts_at' => 'nullable|date',
+            'status' => 'required|in:active,draft',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
+
+        $package = CampaignPackage::findOrFail($request->package_id);
+
+        $campaign = PromoCampaign::create([
+            'artist_id' => $request->artist_id,
+            'package_id' => $package->id,
+            'title' => $request->title,
+            'track_url' => $request->track_url,
+            'platform' => $request->platform,
+            'genres' => $request->input('genres', []),
+            'reward_per_review' => max(50, (int) round($package->price_ngn * 0.5 / $package->review_target)),
+            'listen_target' => $package->listen_target,
+            'review_target' => $package->review_target,
+            'status' => $request->status,
+            'amount_paid_ngn' => $package->price_ngn,
+            'starts_at' => $request->input('starts_at'),
+        ]);
+
+        if ($campaign->isActive()) {
+            $campaign->update(['funded_at' => now()]);
+            \App\Jobs\DistributeCampaignJob::dispatch($campaign->id);
+        }
+
+        return redirect()->route('admin.campaigns')
+            ->with('status', "Campaign '{$campaign->title}' created for {$campaign->artist?->name}.");
+    }
+
     public function activateCampaign(Request $request, PromoCampaign $campaign)
     {
         $campaign->update([
@@ -76,7 +129,15 @@ class AdminCommandCenterController extends Controller
 
     public function listeners(Request $request)
     {
-        $query = User::where('role', User::ROLE_LISTENER)
+        $showDeleted = $request->query('status') === 'deleted';
+
+        $query = User::query()->where('role', User::ROLE_LISTENER);
+
+        if ($showDeleted) {
+            $query->withTrashed()->whereNotNull('deleted_at');
+        }
+
+        $query
             ->with(['listenerProfile', 'userDevices'])
             ->withCount([
                 'listenSessions as rewarded_sessions_count' => fn ($q) => $q->where('status', ListenSession::STATUS_REWARDED),
@@ -168,9 +229,69 @@ class AdminCommandCenterController extends Controller
         return view('admin.listeners', compact('listeners', 'metrics', 'trustDist', 'topGenres', 'topEarners', 'sort'));
     }
 
+    public function listenerDetail(User $user)
+    {
+        abort_unless(in_array($user->role, [User::ROLE_LISTENER, User::ROLE_ARTIST]), 404);
+
+        $profile = $user->listenerProfile;
+
+        $rewardedQ = fn ($q) => $q->where('status', ListenSession::STATUS_REWARDED);
+        $fraudQ = fn ($q) => $q->where('status', ListenSession::STATUS_FRAUD);
+        $openQ = fn ($q) => $q->where('status', ListenSession::STATUS_OPEN);
+
+        $stats = [
+            'rewarded_sessions' => $user->listenSessions()->where('status', ListenSession::STATUS_REWARDED)->count(),
+            'fraud_sessions' => $user->listenSessions()->where('status', ListenSession::STATUS_FRAUD)->count(),
+            'open_sessions' => $user->listenSessions()->where('status', ListenSession::STATUS_OPEN)->count(),
+            'total_sessions' => $user->listenSessions()->count(),
+            'total_earned' => (int) $user->walletTransactions()
+                ->whereIn('type', [WalletTransaction::TYPE_REWARD, WalletTransaction::TYPE_BONUS])
+                ->where('status', WalletTransaction::STATUS_CREDITED)
+                ->sum('amount'),
+            'total_paid_out' => (int) $user->walletTransactions()
+                ->where('type', WalletTransaction::TYPE_PAYOUT)
+                ->where('status', WalletTransaction::STATUS_CREDITED)
+                ->sum('amount'),
+            'balance' => (int) $user->walletTransactions()
+                ->whereIn('type', [WalletTransaction::TYPE_REWARD, WalletTransaction::TYPE_BONUS])
+                ->where('status', WalletTransaction::STATUS_CREDITED)
+                ->sum('amount')
+                - (int) $user->walletTransactions()
+                    ->where('type', WalletTransaction::TYPE_PAYOUT)
+                    ->where('status', WalletTransaction::STATUS_CREDITED)
+                    ->sum('amount'),
+            'devices' => $user->userDevices()->count(),
+            'last_listened_at' => $user->listenSessions()->max('completed_at'),
+        ];
+
+        $devices = $user->userDevices()->orderByDesc('last_seen_at')->get();
+
+        $sessions = $user->listenSessions()
+            ->with('assignment.campaign:id,title')
+            ->orderByDesc('completed_at')
+            ->limit(15)
+            ->get();
+
+        $transactions = $user->walletTransactions()
+            ->orderByDesc('created_at')
+            ->limit(15)
+            ->get();
+
+        $payouts = $user->payoutRequests()->orderByDesc('created_at')->get();
+
+        $footprint = $user->listenSessions()
+            ->selectRaw('ip_address, country_code, count(*) as sessions, min(started_at) as first_seen, max(started_at) as last_seen')
+            ->whereNotNull('ip_address')
+            ->groupBy('ip_address', 'country_code')
+            ->orderByDesc('sessions')
+            ->get();
+
+        return view('admin.listener-detail', compact('user', 'profile', 'stats', 'devices', 'sessions', 'transactions', 'payouts', 'footprint'));
+    }
+
     public function payouts(Request $request)
     {
-        $payouts = PayoutRequest::with('user:id,name,email')
+        $payouts = PayoutRequest::with('user:id,name,email,phone,ip_address,status')
             ->orderByDesc('created_at')
             ->paginate(25);
 

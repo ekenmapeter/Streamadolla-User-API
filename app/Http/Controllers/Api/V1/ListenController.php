@@ -6,16 +6,18 @@ use App\Http\Controllers\Controller;
 use App\Jobs\RewardSessionJob;
 use App\Models\AppSetting;
 use App\Models\CampaignAssignment;
+use App\Models\CountryReward;
 use App\Models\ListenSession;
 use App\Models\PromoCampaign;
 use App\Models\User;
 use App\Services\FraudEngine;
+use App\Services\GeoIpService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class ListenController extends Controller
 {
-    public function start(Request $request, PromoCampaign $campaign)
+    public function start(Request $request, PromoCampaign $campaign, GeoIpService $geo)
     {
         /** @var User $user */
         $user = $request->user();
@@ -65,9 +67,14 @@ class ListenController extends Controller
 
         $minSeconds = (int) (AppSetting::get('listen_min_seconds', 30) ?? 30);
 
+        $ipAddress = $request->ip();
+        $countryCode = $geo->countryCode($ipAddress);
+
         $session = ListenSession::create([
             'listener_id' => $user->id,
             'assignment_id' => $assignment->id,
+            'country_code' => $countryCode,
+            'ip_address' => $ipAddress,
             'min_duration_seconds' => $minSeconds,
             'elapsed_seconds' => 0,
             'checkpoints' => [],
@@ -151,8 +158,6 @@ class ListenController extends Controller
             ], 422);
         }
 
-        $campaign = $session->assignment->campaign;
-
         $session->update([
             'status' => ListenSession::STATUS_REWARDED,
             'completed_at' => now(),
@@ -183,7 +188,8 @@ class ListenController extends Controller
             'session' => [
                 'id' => $session->id,
                 'status' => ListenSession::STATUS_REWARDED,
-                'reward' => (int) $campaign->reward_per_review,
+                'country_code' => $session->country_code,
+                'reward' => CountryReward::amountFor($session->country_code),
             ],
         ], 201);
     }
@@ -194,6 +200,8 @@ class ListenController extends Controller
             'id' => $session->id,
             'session_token' => $session->session_token,
             'status' => $session->status,
+            'country_code' => $session->country_code,
+            'reward' => CountryReward::amountFor($session->country_code),
             'min_duration_seconds' => $session->min_duration_seconds,
             'elapsed_seconds' => $session->elapsed_seconds,
             'can_complete' => $session->hasMetDuration(),

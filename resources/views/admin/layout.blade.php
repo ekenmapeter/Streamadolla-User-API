@@ -34,13 +34,16 @@
                     <i class="fas fa-bullhorn w-5"></i><span>Campaigns</span>
                 </a>
                 <a href="{{ route('admin.listeners') }}" class="flex items-center space-x-3 px-4 py-2.5 rounded-full transition {{ request()->routeIs('admin.listeners') ? 'neu-inset' : 'neu-btn' }}" style="{{ request()->routeIs('admin.listeners') ? 'color: var(--neu-accent)' : 'color: var(--neu-text)' }}">
-                    <i class="fas fa-users w-5"></i><span>Listeners</span>
+                    <i class="fas fa-users w-5"></i><span>Users</span>
                 </a>
                 <a href="{{ route('admin.api-docs') }}" class="flex items-center space-x-3 px-4 py-2.5 rounded-full transition {{ request()->routeIs('admin.api-docs') ? 'neu-inset' : 'neu-btn' }}" style="{{ request()->routeIs('admin.api-docs') ? 'color: var(--neu-accent)' : 'color: var(--neu-text)' }}">
                     <i class="fas fa-code w-5"></i><span>API Docs</span>
                 </a>
                 <a href="{{ route('admin.payouts') }}" class="flex items-center space-x-3 px-4 py-2.5 rounded-full transition {{ request()->routeIs('admin.payouts') ? 'neu-inset' : 'neu-btn' }}" style="{{ request()->routeIs('admin.payouts') ? 'color: var(--neu-accent)' : 'color: var(--neu-text)' }}">
                     <i class="fas fa-money-bill-transfer w-5"></i><span>Payouts</span>
+                </a>
+                <a href="{{ route('admin.rewards') }}" class="flex items-center space-x-3 px-4 py-2.5 rounded-full transition {{ request()->routeIs('admin.rewards') ? 'neu-inset' : 'neu-btn' }}" style="{{ request()->routeIs('admin.rewards') ? 'color: var(--neu-accent)' : 'color: var(--neu-text)' }}">
+                    <i class="fas fa-earth-americas w-5"></i><span>Reward Settings</span>
                 </a>
                 <a href="{{ route('admin.settings') }}" class="flex items-center space-x-3 px-4 py-2.5 rounded-full transition {{ request()->routeIs('admin.settings') ? 'neu-inset' : 'neu-btn' }}" style="{{ request()->routeIs('admin.settings') ? 'color: var(--neu-accent)' : 'color: var(--neu-text)' }}">
                     <i class="fas fa-sliders w-5"></i><span>App Settings</span>
@@ -73,9 +76,10 @@
                 <div class="neu-sm absolute right-0 mt-3 w-52 p-3 space-y-1 text-sm font-bold z-50">
                     <a href="{{ route('admin.center') }}" class="block px-4 py-2.5 rounded-full hover:bg-black/5" style="color: var(--neu-text)">Overview</a>
                     <a href="{{ route('admin.campaigns') }}" class="block px-4 py-2.5 rounded-full hover:bg-black/5" style="color: var(--neu-text)">Campaigns</a>
-                    <a href="{{ route('admin.listeners') }}" class="block px-4 py-2.5 rounded-full hover:bg-black/5" style="color: var(--neu-text)">Listeners</a>
+                    <a href="{{ route('admin.listeners') }}" class="block px-4 py-2.5 rounded-full hover:bg-black/5" style="color: var(--neu-text)">Users</a>
                     <a href="{{ route('admin.api-docs') }}" class="block px-4 py-2.5 rounded-full hover:bg-black/5" style="color: var(--neu-text)">API Docs</a>
                     <a href="{{ route('admin.payouts') }}" class="block px-4 py-2.5 rounded-full hover:bg-black/5" style="color: var(--neu-text)">Payouts</a>
+                    <a href="{{ route('admin.rewards') }}" class="block px-4 py-2.5 rounded-full hover:bg-black/5" style="color: var(--neu-text)">Reward Settings</a>
                     <a href="{{ route('admin.settings') }}" class="block px-4 py-2.5 rounded-full hover:bg-black/5" style="color: var(--neu-text)">App Settings</a>
                     <a href="{{ route('dashboard') }}" class="block px-4 py-2.5 rounded-full hover:bg-black/5" style="color: var(--neu-text)">Fleet Control</a>
                     <form action="{{ route('logout') }}" method="POST">

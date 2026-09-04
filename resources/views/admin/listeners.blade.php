@@ -1,7 +1,7 @@
 @extends('admin.layout')
 
-@section('header', 'Listeners')
-@section('subtitle', 'All listeners — engagement, trust and earnings at a glance')
+@section('header', 'Users')
+@section('subtitle', 'Manage, create, suspend and monitor user accounts')
 
 @section('content')
     {{-- ── Global metrics ─────────────────────────────────────────────────── --}}
@@ -48,12 +48,12 @@
         </div>
         <div>
             <label class="block text-xs text-gray-400 mb-1.5 font-medium uppercase tracking-wide">Status</label>
-            <select name="status" class="px-4 py-2.5 bg-white/5 border border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition-all text-sm text-gray-200">
-                <option value="">All</option>
-                @foreach (['active', 'suspended', 'banned'] as $st)
-                    <option value="{{ $st }}" {{ request('status') === $st ? 'selected' : '' }}>{{ ucfirst($st) }}</option>
-                @endforeach
-            </select>
+<select name="status" class="px-4 py-2.5 bg-white/5 border border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition-all text-sm text-gray-200">
+                    <option value="">All</option>
+                    @foreach (['active', 'suspended', 'banned', 'deleted'] as $st)
+                        <option value="{{ $st }}" {{ request('status') === $st ? 'selected' : '' }}>{{ ucfirst($st) }}</option>
+                    @endforeach
+                </select>
         </div>
         <div>
             <label class="block text-xs text-gray-400 mb-1.5 font-medium uppercase tracking-wide">Sort By</label>
@@ -77,7 +77,10 @@
         <div class="xl:col-span-2 bg-gray-900 border border-white/10 rounded-2xl overflow-hidden">
             <div class="px-6 py-4 border-b border-white/10 flex items-center">
                 <h2 class="font-bold"><i class="fas fa-users mr-2 text-purple-400"></i>All Listeners</h2>
-                <span class="ml-auto text-xs bg-white/5 text-gray-300 px-3 py-1 rounded-full">{{ $listeners->total() }} found</span>
+                <a href="{{ route('admin.users.create') }}" class="ml-auto mr-3 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition">
+                    <i class="fas fa-user-plus mr-1"></i>Add User
+                </a>
+                <span class="text-xs bg-white/5 text-gray-300 px-3 py-1 rounded-full">{{ $listeners->total() }} found</span>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
@@ -112,12 +115,15 @@
                                             {{ strtoupper(substr($listener->name, 0, 2)) }}
                                         </div>
                                         <div class="min-w-0">
-                                            <p class="font-semibold truncate">{{ $listener->name }}</p>
+                                            <a href="{{ route('admin.listeners.detail', $listener) }}" class="font-semibold truncate hover:text-purple-400 transition block">{{ $listener->name }}</a>
                                             <p class="text-xs text-gray-500 truncate">{{ $listener->email }}
                                                 @if ($listener->status !== 'active')
                                                     <span class="ml-1 text-red-400">· {{ $listener->status }}</span>
                                                 @endif
                                             </p>
+                                            @if ($listener->ip_address)
+                                                <p class="text-[11px] text-gray-600 font-mono mt-0.5"><i class="fas fa-globe mr-1 text-gray-700"></i>{{ $listener->ip_address }}</p>
+                                            @endif
                                         </div>
                                     </div>
                                 </td>
@@ -148,7 +154,7 @@
         </div>
 
         {{-- Sidebar --}}
-        <div class="space-y-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             {{-- Top earners --}}
             <div class="bg-gray-900 border border-white/10 rounded-2xl overflow-hidden">
                 <div class="px-6 py-4 border-b border-white/10">
@@ -197,7 +203,7 @@
             </div>
 
             {{-- Genre distribution --}}
-            <div class="bg-gray-900 border border-white/10 rounded-2xl overflow-hidden">
+            <div class="bg-gray-900 border border-white/10 rounded-2xl overflow-hidden md:col-span-2">
                 <div class="px-6 py-4 border-b border-white/10">
                     <h3 class="font-bold text-sm"><i class="fas fa-music mr-2 text-cyan-400"></i>Top Genres</h3>
                 </div>
