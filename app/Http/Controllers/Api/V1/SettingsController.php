@@ -73,13 +73,17 @@ class SettingsController extends Controller
         $file = $files[0];
         $filename = basename($file);
 
-        $version = (string) (AppSetting::get('app_version') ?? '');
+        $version = '';
 
-        // Fall back to the version baked into the filename (e.g. app-v1.2.0.apk)
-        if ($version === '' && preg_match('/v?(\d+\.\d+\.\d+)/', $filename, $m)) {
+        // The version baked into the filename (e.g. app-v1.2.0.apk) is the
+        // source of truth — the file itself may outpace the app_version
+        // setting if a deploy skipped the settings update.
+        if (preg_match('/v?(\d+\.\d+\.\d+)/', $filename, $m)) {
             $version = $m[1];
         }
-        $version = $version !== '' ? $version : '1.0.0';
+        if ($version === '') {
+            $version = (string) (AppSetting::get('app_version') ?? '1.0.0');
+        }
 
         return [
             'version' => $version,

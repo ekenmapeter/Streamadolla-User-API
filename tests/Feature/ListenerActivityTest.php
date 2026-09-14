@@ -139,7 +139,7 @@ class ListenerActivityTest extends TestCase
 
             $apk = $response->json('apk');
             $this->assertNotNull($apk);
-            $this->assertSame('1.0.0', $apk['version']);
+            $this->assertSame('9.9.9', $apk['version']);
             $this->assertStringContainsString('test-update-9.9.9.apk', $apk['url']);
             $this->assertIsInt($apk['size']);
         } finally {
