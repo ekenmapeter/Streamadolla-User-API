@@ -26,6 +26,23 @@ class ArtistPortalTest extends TestCase
         $this->get('/')->assertOk()->assertSee('Streamadollar');
     }
 
+    public function test_landing_page_links_to_newest_apk(): void
+    {
+        $apkPath = public_path('download/test-update-9.9.9.apk');
+        @mkdir(dirname($apkPath), 0777, true);
+        file_put_contents($apkPath, 'fake-apk-bytes');
+        touch($apkPath, now()->addHour()->timestamp);
+
+        try {
+            $this->get('/')
+                ->assertOk()
+                ->assertSee('download/test-update-9.9.9.apk')
+                ->assertDontSee('streamadolla-reward-app-v1.0.4.apk');
+        } finally {
+            @unlink($apkPath);
+        }
+    }
+
     public function test_artist_signup_creates_user_and_profile(): void
     {
         $this->seed(\Database\Seeders\AudioReachSeeder::class);

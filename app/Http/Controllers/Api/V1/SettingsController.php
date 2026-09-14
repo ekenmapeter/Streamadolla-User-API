@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\AppSetting;
+use App\Support\ApkPublish;
 use Illuminate\Http\Request;
 
 class SettingsController extends Controller
@@ -57,41 +58,9 @@ class SettingsController extends Controller
     /**
      * Locates the newest APK in public/download so the app can auto-update
      * without the Play Store. Returns null when no APK is published.
-     *
-     * @return array{version: string, url: string, size: int, filename: string, sha256: string, released_at: string}|null
      */
     private function latestApk(): ?array
     {
-        $files = glob(public_path('download/*.apk')) ?: [];
-
-        if (empty($files)) {
-            return null;
-        }
-
-        usort($files, fn ($a, $b) => filemtime($b) - filemtime($a));
-
-        $file = $files[0];
-        $filename = basename($file);
-
-        $version = '';
-
-        // The version baked into the filename (e.g. app-v1.2.0.apk) is the
-        // source of truth — the file itself may outpace the app_version
-        // setting if a deploy skipped the settings update.
-        if (preg_match('/v?(\d+\.\d+\.\d+)/', $filename, $m)) {
-            $version = $m[1];
-        }
-        if ($version === '') {
-            $version = (string) (AppSetting::get('app_version') ?? '1.0.0');
-        }
-
-        return [
-            'version' => $version,
-            'url' => url('download/' . $filename),
-            'size' => (int) filesize($file),
-            'filename' => $filename,
-            'sha256' => hash_file('sha256', $file),
-            'released_at' => date('Y-m-d H:i:s', filemtime($file)),
-        ];
+        return ApkPublish::latest();
     }
 }
