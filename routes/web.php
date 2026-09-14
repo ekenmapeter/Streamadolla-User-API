@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\ArtistAuthController;
 use App\Http\Controllers\DeviceAssignmentController;
 use App\Http\Controllers\AdminCommandCenterController;
 use App\Http\Controllers\AdminRewardController;
+use App\Http\Controllers\AdminTrackController;
 use App\Http\Controllers\AdminUserController;
 
 // Public landing page for Streamadollar
@@ -31,6 +32,10 @@ Route::middleware(['auth', 'role:artist,admin'])->prefix('artist')->name('artist
     Route::get('/campaigns/create', [ArtistController::class, 'createCampaign'])->name('campaign.create');
     Route::post('/campaigns', [ArtistController::class, 'storeCampaign'])->name('campaign.store');
     Route::get('/campaigns/{promo_campaign}', [ArtistController::class, 'showCampaign'])->name('campaign.show');
+
+    Route::get('/tracks', [ArtistController::class, 'tracks'])->name('tracks');
+    Route::get('/tracks/create', [ArtistController::class, 'submitTrack'])->name('track.create');
+    Route::post('/tracks', [ArtistController::class, 'storeTrack'])->name('track.store');
 });
 
 // Legacy fleet dashboard (admin only)
@@ -79,6 +84,13 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/admin/rewards/{countryReward}/delete', [AdminRewardController::class, 'destroy'])->name('admin.rewards.destroy');
     Route::post('/admin/rewards-default', [AdminRewardController::class, 'default'])->name('admin.rewards.default');
     Route::post('/admin/rewards-lookup', [AdminRewardController::class, 'lookup'])->name('admin.rewards.lookup');
+
+    // ── Track list management (admin verifies artist payments) ──
+    Route::get('/admin/tracks', [AdminTrackController::class, 'index'])->name('admin.tracks');
+    Route::post('/admin/tracks/{track}/approve', [AdminTrackController::class, 'approve'])->name('admin.tracks.approve');
+    Route::post('/admin/tracks/{track}/reject', [AdminTrackController::class, 'reject'])->name('admin.tracks.reject');
+    Route::post('/admin/tracks/{track}/pause', [AdminTrackController::class, 'pause'])->name('admin.tracks.pause');
+    Route::post('/admin/tracks/{track}/resume', [AdminTrackController::class, 'resume'])->name('admin.tracks.resume');
 
     // ── User Management (create, edit, suspend, delete) ──
     Route::get('/admin/users/create', [AdminUserController::class, 'create'])->name('admin.users.create');

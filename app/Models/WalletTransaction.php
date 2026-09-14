@@ -12,6 +12,7 @@ class WalletTransaction extends Model
 
     public const TYPE_REWARD = 'reward';
     public const TYPE_BONUS = 'bonus';
+    public const TYPE_RENTAL = 'rental';
     public const TYPE_PAYOUT = 'payout';
 
     public const STATUS_PENDING = 'pending';

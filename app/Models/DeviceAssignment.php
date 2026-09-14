@@ -10,6 +10,7 @@ class DeviceAssignment extends Model
         'device_id',
         'campaign_id',
         'campaign_track_id',
+        'track_id',
         'subset_start_index',
         'subset_end_index',
         'shuffled_index',
@@ -44,6 +45,16 @@ class DeviceAssignment extends Model
     public function campaignTrack()
     {
         return $this->belongsTo(CampaignTrack::class);
+    }
+
+    public function track()
+    {
+        return $this->belongsTo(Track::class);
+    }
+
+    public function streamPlay()
+    {
+        return $this->hasOne(StreamPlay::class, 'device_assignment_id');
     }
 
     // ── Scopes ───────────────────────────────────────────────────────────

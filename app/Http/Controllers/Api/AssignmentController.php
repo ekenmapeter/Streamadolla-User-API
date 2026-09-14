@@ -146,7 +146,7 @@ class AssignmentController extends Controller
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        if (in_array($request->status, ['stopped', 'completed']) && $assignment->started_at && now()->diffInSeconds($assignment->started_at) < 10) {
+        if (in_array($request->status, ['stopped', 'completed']) && $assignment->started_at && (now()->timestamp - $assignment->started_at->timestamp) < 10) {
             return response()->json([
                 'success'    => true,
                 'message'    => 'Ignored stale status update due to recent track transition',

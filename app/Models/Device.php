@@ -10,6 +10,7 @@ class Device extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'user_id',
         'name',
         'device_id',
         'fcm_token',
@@ -25,6 +26,22 @@ class Device extends Model
     ];
 
     // ── Relationships ────────────────────────────────────────────────────
+
+    /**
+     * The user whose phone this device is (rented devices only).
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Rental contracts for this device.
+     */
+    public function rentals()
+    {
+        return $this->hasMany(DeviceRental::class);
+    }
 
     /**
      * All assignments for this device.

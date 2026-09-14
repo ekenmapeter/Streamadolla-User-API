@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\CampaignPackage;
 use App\Models\ListenSession;
 use App\Models\PromoCampaign;
+use App\Models\Track;
 use App\Services\PaystackService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -114,5 +115,93 @@ class ArtistController extends Controller
         ];
 
         return view('artist.campaign-show', compact('campaign', 'sessions', 'stats'));
+    }
+
+    // ── Track submissions (admin-approved track list) ───────────────────
+
+    public function tracks(Request $request)
+    {
+        $artist = $request->user();
+
+        $tracks = Track::ownedBy($artist->id)
+            ->withCount('streamPlays')
+            ->orderByDesc('created_at')
+            ->get();
+
+        $stats = [
+            'total_tracks' => $tracks->count(),
+            'live_tracks' => $tracks->where('status', Track::STATUS_LIVE)->count(),
+            'total_streams' => $tracks->sum('streams_served'),
+            'total_spent' => $tracks->sum('amount_paid_ngn'),
+        ];
+
+        return view('artist.tracks', compact('tracks', 'stats'));
+    }
+
+    public function submitTrack(Request $request)
+    {
+        $packages = CampaignPackage::where('is_active', true)->get();
+
+        return view('artist.track-submit', compact('packages'));
+    }
+
+    public function storeTrack(Request $request, PaystackService $paystack)
+    {
+        $artist = $request->user();
+
+        $validator = Validator::make($request->all(), [
+            'title' => 'required|string|max:200',
+            'media_url' => 'required|url|max:500',
+            'platform' => 'required|in:youtube,spotify,audiomack,boomplay,apple_music,tidal,iheart,other',
+            'genre' => 'nullable|string|max:50',
+            'duration_seconds' => 'nullable|integer|between:30,7200',
+            'package_id' => 'required|exists:campaign_packages,id',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
+
+        $package = CampaignPackage::findOrFail($request->package_id);
+
+        $track = Track::create([
+            'artist_id' => $artist->id,
+            'package_id' => $package->id,
+            'title' => $request->title,
+            'artist_name' => $artist->artistProfile?->stage_name ?? $artist->name,
+            'platform' => $request->platform,
+            'media_url' => $request->media_url,
+            'genre' => $request->input('genre'),
+            'duration_seconds' => (int) $request->input('duration_seconds', 180),
+            'status' => Track::STATUS_PENDING_PAYMENT,
+            'amount_paid_ngn' => $package->price_ngn,
+            'stream_budget' => $package->listen_target,
+        ]);
+
+        if (! config('services.paystack.secret_key')) {
+            return redirect()->route('artist.tracks')
+                ->with('status', 'Track submitted. Payment gateway not configured — it will require admin verification.');
+        }
+
+        try {
+            $checkout = $paystack->initialize([
+                'amount' => $package->price_ngn * 100,
+                'email' => $artist->email,
+                'reference' => 'TR-' . strtoupper(uniqid()),
+                'metadata' => [
+                    'track_id' => $track->id,
+                    'kind' => 'track_funding',
+                ],
+            ]);
+
+            $track->update(['payment_reference' => $checkout['reference'] ?? null]);
+
+            return redirect()->away($checkout['authorization_url'] ?? route('artist.tracks'));
+        } catch (\Throwable $e) {
+            report($e);
+
+            return redirect()->route('artist.tracks')
+                ->with('status', 'Track submitted but payment could not be started. Please try funding later.');
+        }
     }
 }

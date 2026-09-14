@@ -54,6 +54,25 @@
         </div>
     </div>
 
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        <div class="bg-gray-900 border border-white/10 rounded-2xl p-6">
+            <p class="text-sm text-gray-400">Active Device Rentals</p>
+            <p class="text-2xl font-extrabold mt-2 text-blue-400">{{ $stats['active_rentals'] }}</p>
+        </div>
+        <div class="bg-gray-900 border border-white/10 rounded-2xl p-6">
+            <p class="text-sm text-gray-400">Rental Streams Today</p>
+            <p class="text-2xl font-extrabold mt-2">{{ $stats['rental_streams_today'] }}</p>
+        </div>
+        <div class="bg-gray-900 border border-white/10 rounded-2xl p-6">
+            <p class="text-sm text-gray-400">Rental Paid Today</p>
+            <p class="text-2xl font-extrabold mt-2 text-green-400">₦{{ number_format($stats['rental_paid_today']) }}</p>
+        </div>
+        <a href="{{ route('admin.tracks') }}" class="bg-gray-900 border border-white/10 rounded-2xl p-6 hover:border-purple-500/50 transition">
+            <p class="text-sm text-gray-400">Tracks Awaiting Approval</p>
+            <p class="text-2xl font-extrabold mt-2 {{ $stats['tracks_pending'] ? 'text-amber-400' : '' }}">{{ $stats['tracks_pending'] }}</p>
+        </a>
+    </div>
+
     <div class="flex items-center justify-between mb-5">
         <h2 class="text-lg font-bold">Recent Listens</h2>
     </div>

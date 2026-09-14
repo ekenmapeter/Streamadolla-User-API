@@ -34,6 +34,8 @@ class AudioReachSeeder extends Seeder
             ['maintenance_mode', false, 'general', 'Disables listening when enabled'],
             ['app_version', '1.0.0', 'app', 'Current app release version'],
             ['min_app_version', '1.0.0', 'app', 'Minimum app version the server will accept'],
+            ['rental_enabled', true, 'rentals', 'Whether the device rental (remote playback) feature is enabled'],
+            ['rental_rate_per_stream', 5, 'rentals', 'Amount paid to a user per streamed track while their device is rented'],
         ];
 
         foreach ($settings as [$key, $value, $group, $description]) {

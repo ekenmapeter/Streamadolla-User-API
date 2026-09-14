@@ -56,7 +56,7 @@ class PaystackService
 
     public function verifyWebhookSignature(string $signature, string $payload): bool
     {
-        $secret = config('services.paystack.webhook_secret', '');
+        $secret = (string) config('services.paystack.webhook_secret', '');
 
         if ($secret === '') {
             return true;

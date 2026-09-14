@@ -106,4 +106,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(PayoutRequest::class);
     }
+
+    public function rentals(): HasMany
+    {
+        return $this->hasMany(DeviceRental::class);
+    }
+
+    public function streamPlays(): HasMany
+    {
+        return $this->hasMany(StreamPlay::class);
+    }
 }

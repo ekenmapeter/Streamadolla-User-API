@@ -39,8 +39,10 @@ class CommandController extends Controller
             ], 422);
         }
 
-        // Get all active devices (online or already streaming)
-        $devices = Device::whereIn('status', ['online', 'streaming'])->get();
+        // Get all active devices (online or already streaming) — exclude rented user phones
+        $devices = Device::whereIn('status', ['online', 'streaming'])
+            ->whereNull('user_id')
+            ->get();
 
         if ($devices->isEmpty()) {
             return response()->json([

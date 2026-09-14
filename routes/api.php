@@ -72,6 +72,8 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\ActivityController;
 use App\Http\Controllers\Api\V1\FeedController;
 use App\Http\Controllers\Api\V1\ListenController;
+use App\Http\Controllers\Api\V1\RentalController;
+use App\Http\Controllers\Api\V1\TrackController;
 use App\Http\Controllers\Api\V1\WalletController;
 use App\Http\Controllers\Api\V1\SettingsController;
 use App\Http\Controllers\Api\V1\DeviceController as ListenerDeviceController;
@@ -96,6 +98,15 @@ Route::prefix('v1')->group(function () {
         Route::post('/listen/{campaign}/start', [ListenController::class, 'start']);
         Route::post('/listen/{session}/checkpoint', [ListenController::class, 'checkpoint']);
         Route::post('/listen/{session}/complete', [ListenController::class, 'complete']);
+
+        Route::get('/tracks', [TrackController::class, 'index']);
+
+        Route::get('/rentals/offer', [RentalController::class, 'offer']);
+        Route::get('/rentals', [RentalController::class, 'index']);
+        Route::post('/rentals/start', [RentalController::class, 'start']);
+        Route::post('/rentals/pause', [RentalController::class, 'pause']);
+        Route::post('/rentals/stop', [RentalController::class, 'stop']);
+        Route::post('/rentals/assignments/{assignment}/status', [RentalController::class, 'assignmentStatus']);
 
         Route::get('/wallet', [WalletController::class, 'index']);
         Route::post('/wallet/payout-request', [WalletController::class, 'requestPayout']);

@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\AppSetting;
 use App\Models\CampaignPackage;
+use App\Models\DeviceRental;
 use App\Models\ListenSession;
 use App\Models\ListenerProfile;
 use App\Models\PromoCampaign;
+use App\Models\StreamPlay;
+use App\Models\Track;
 use App\Models\User;
 use App\Models\UserDevice;
 use App\Models\PayoutRequest;
@@ -29,6 +32,10 @@ class AdminCommandCenterController extends Controller
             'fraud' => ListenSession::where('status', ListenSession::STATUS_FRAUD)->count(),
             'payouts_pending' => PayoutRequest::pending()->count(),
             'fcm_devices' => UserDevice::whereNotNull('fcm_token')->where('last_seen_at', '>=', now()->subDay())->count(),
+            'active_rentals' => DeviceRental::active()->count(),
+            'rental_streams_today' => StreamPlay::where('status', StreamPlay::STATUS_REWARDED)->whereDate('created_at', today())->count(),
+            'rental_paid_today' => (int) StreamPlay::where('status', StreamPlay::STATUS_REWARDED)->whereDate('created_at', today())->sum('reward_amount'),
+            'tracks_pending' => Track::where('status', Track::STATUS_PENDING_APPROVAL)->count(),
         ];
 
         $recentSessions = ListenSession::with(['assignment.campaign:id,title', 'listener:id,name'])
@@ -145,7 +152,7 @@ class AdminCommandCenterController extends Controller
                 'listenSessions as open_sessions_count' => fn ($q) => $q->where('status', ListenSession::STATUS_OPEN),
                 'payoutRequests as pending_payouts_count' => fn ($q) => $q->pending(),
             ])
-            ->withSum(['walletTransactions as total_earned' => fn ($q) => $q->whereIn('type', [WalletTransaction::TYPE_REWARD, WalletTransaction::TYPE_BONUS])->where('status', WalletTransaction::STATUS_CREDITED)], 'amount')
+            ->withSum(['walletTransactions as total_earned' => fn ($q) => $q->whereIn('type', [WalletTransaction::TYPE_REWARD, WalletTransaction::TYPE_BONUS, WalletTransaction::TYPE_RENTAL])->where('status', WalletTransaction::STATUS_CREDITED)], 'amount')
             ->withSum(['walletTransactions as total_paid_out' => fn ($q) => $q->where('type', WalletTransaction::TYPE_PAYOUT)->where('status', WalletTransaction::STATUS_CREDITED)], 'amount')
             ->withMax('listenSessions as last_listened_at', 'completed_at');
 
@@ -181,7 +188,7 @@ class AdminCommandCenterController extends Controller
         $listeners = $query->paginate(15)->withQueryString();
 
         // ── Global metrics ─────────────────────────────────────────────────────
-        $rewardCredits = fn ($q) => $q->whereIn('type', [WalletTransaction::TYPE_REWARD, WalletTransaction::TYPE_BONUS])->where('status', WalletTransaction::STATUS_CREDITED);
+        $rewardCredits = fn ($q) => $q->whereIn('type', [WalletTransaction::TYPE_REWARD, WalletTransaction::TYPE_BONUS, WalletTransaction::TYPE_RENTAL])->where('status', WalletTransaction::STATUS_CREDITED);
         $payoutDebits = fn ($q) => $q->where('type', WalletTransaction::TYPE_PAYOUT)->where('status', WalletTransaction::STATUS_CREDITED);
 
         $metrics = [
@@ -192,12 +199,12 @@ class AdminCommandCenterController extends Controller
             'rewarded_sessions' => ListenSession::where('status', ListenSession::STATUS_REWARDED)->count(),
             'fraud_sessions' => ListenSession::where('status', ListenSession::STATUS_FRAUD)->count(),
             'pending_payouts' => PayoutRequest::pending()->count(),
-            'total_earned' => (int) WalletTransaction::whereIn('type', [WalletTransaction::TYPE_REWARD, WalletTransaction::TYPE_BONUS])->where('status', WalletTransaction::STATUS_CREDITED)->sum('amount'),
+            'total_earned' => (int) WalletTransaction::whereIn('type', [WalletTransaction::TYPE_REWARD, WalletTransaction::TYPE_BONUS, WalletTransaction::TYPE_RENTAL])->where('status', WalletTransaction::STATUS_CREDITED)->sum('amount'),
             'total_paid_out' => (int) WalletTransaction::where('type', WalletTransaction::TYPE_PAYOUT)->where('status', WalletTransaction::STATUS_CREDITED)->sum('amount'),
             'avg_trust' => round((float) ListenerProfile::avg('trust_level'), 2),
             'avg_streak' => round((float) ListenerProfile::avg('streak'), 1),
             'fcm_devices' => UserDevice::whereNotNull('fcm_token')->where('last_seen_at', '>=', now()->subDay())->count(),
-            'total_balance' => (int) WalletTransaction::whereIn('type', [WalletTransaction::TYPE_REWARD, WalletTransaction::TYPE_BONUS])->where('status', WalletTransaction::STATUS_CREDITED)->sum('amount')
+            'total_balance' => (int) WalletTransaction::whereIn('type', [WalletTransaction::TYPE_REWARD, WalletTransaction::TYPE_BONUS, WalletTransaction::TYPE_RENTAL])->where('status', WalletTransaction::STATUS_CREDITED)->sum('amount')
                 - (int) WalletTransaction::where('type', WalletTransaction::TYPE_PAYOUT)->where('status', WalletTransaction::STATUS_CREDITED)->sum('amount'),
         ];
 
@@ -221,7 +228,7 @@ class AdminCommandCenterController extends Controller
         // Top earners
         $topEarners = User::where('role', User::ROLE_LISTENER)
             ->with(['listenerProfile'])
-            ->withSum(['walletTransactions as earned' => fn ($q) => $q->whereIn('type', [WalletTransaction::TYPE_REWARD, WalletTransaction::TYPE_BONUS])->where('status', WalletTransaction::STATUS_CREDITED)], 'amount')
+            ->withSum(['walletTransactions as earned' => fn ($q) => $q->whereIn('type', [WalletTransaction::TYPE_REWARD, WalletTransaction::TYPE_BONUS, WalletTransaction::TYPE_RENTAL])->where('status', WalletTransaction::STATUS_CREDITED)], 'amount')
             ->orderByDesc('earned')
             ->limit(5)
             ->get();
@@ -245,7 +252,7 @@ class AdminCommandCenterController extends Controller
             'open_sessions' => $user->listenSessions()->where('status', ListenSession::STATUS_OPEN)->count(),
             'total_sessions' => $user->listenSessions()->count(),
             'total_earned' => (int) $user->walletTransactions()
-                ->whereIn('type', [WalletTransaction::TYPE_REWARD, WalletTransaction::TYPE_BONUS])
+                ->whereIn('type', [WalletTransaction::TYPE_REWARD, WalletTransaction::TYPE_BONUS, WalletTransaction::TYPE_RENTAL])
                 ->where('status', WalletTransaction::STATUS_CREDITED)
                 ->sum('amount'),
             'total_paid_out' => (int) $user->walletTransactions()
@@ -253,7 +260,7 @@ class AdminCommandCenterController extends Controller
                 ->where('status', WalletTransaction::STATUS_CREDITED)
                 ->sum('amount'),
             'balance' => (int) $user->walletTransactions()
-                ->whereIn('type', [WalletTransaction::TYPE_REWARD, WalletTransaction::TYPE_BONUS])
+                ->whereIn('type', [WalletTransaction::TYPE_REWARD, WalletTransaction::TYPE_BONUS, WalletTransaction::TYPE_RENTAL])
                 ->where('status', WalletTransaction::STATUS_CREDITED)
                 ->sum('amount')
                 - (int) $user->walletTransactions()

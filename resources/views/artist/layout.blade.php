@@ -33,6 +33,9 @@
                 <a href="{{ route('artist.campaign.create') }}" class="flex items-center space-x-3 px-4 py-3 rounded-full transition {{ request()->routeIs('artist.campaign.create', 'artist.campaign.store') ? 'neu-inset' : 'neu-btn' }}" style="{{ request()->routeIs('artist.campaign.create', 'artist.campaign.store') ? 'color: var(--neu-accent)' : 'color: var(--neu-text)' }}">
                     <i class="fas fa-plus-circle w-5"></i><span>New Campaign</span>
                 </a>
+                <a href="{{ route('artist.tracks') }}" class="flex items-center space-x-3 px-4 py-3 rounded-full transition {{ request()->routeIs('artist.tracks', 'artist.track.create', 'artist.track.store') ? 'neu-inset' : 'neu-btn' }}" style="{{ request()->routeIs('artist.tracks', 'artist.track.create', 'artist.track.store') ? 'color: var(--neu-accent)' : 'color: var(--neu-text)' }}">
+                    <i class="fas fa-list-music w-5"></i><span>My Tracks</span>
+                </a>
             </nav>
 
             <div class="mt-auto space-y-2 text-sm font-bold pt-4" style="border-top: 1px solid rgba(75,90,114,.12)">
@@ -58,6 +61,7 @@
                 <div class="neu-sm absolute right-0 mt-3 w-52 p-3 space-y-1 text-sm font-bold z-50">
                     <a href="{{ route('artist.dashboard') }}" class="block px-4 py-2.5 rounded-full hover:bg-black/5" style="color: var(--neu-text)">Overview</a>
                     <a href="{{ route('artist.campaign.create') }}" class="block px-4 py-2.5 rounded-full hover:bg-black/5" style="color: var(--neu-text)">New Campaign</a>
+                    <a href="{{ route('artist.tracks') }}" class="block px-4 py-2.5 rounded-full hover:bg-black/5" style="color: var(--neu-text)">My Tracks</a>
                     <form action="{{ route('logout') }}" method="POST">
                         @csrf
                         <button type="submit" class="w-full text-left px-4 py-2.5 rounded-full hover:bg-black/5" style="color: #dc2626"><i class="fas fa-sign-out-alt mr-2"></i>Logout</button>

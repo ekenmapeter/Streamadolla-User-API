@@ -66,6 +66,11 @@ class DeviceController extends Controller
                 'last_seen_at' => now(),
                 'free_move' => $request->boolean('free_move', $device->free_move),
             ]);
+
+            // Keep the linked fleet device fresh while the phone is rented.
+            \App\Models\Device::where('device_id', 'user-' . $device->fingerprint)
+                ->where('user_id', $user->id)
+                ->update(['last_seen' => now(), 'status' => 'online']);
         }
 
         return response()->json([

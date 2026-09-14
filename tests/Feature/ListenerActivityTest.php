@@ -166,6 +166,8 @@ class ListenerActivityTest extends TestCase
             $apk = $response->json('apk');
             $this->assertNotNull($apk);
             $this->assertStringContainsString('test-update-9.9.9.apk', $apk['url']);
+            $this->assertSame(hash('sha256', 'fake-apk-bytes'), $apk['sha256']);
+            $this->assertNotEmpty($apk['released_at']);
         } finally {
             @unlink($apkPath);
         }

@@ -19,9 +19,7 @@ class FinalizeCampaigns extends Command
         $campaigns = PromoCampaign::where('status', PromoCampaign::STATUS_ACTIVE)->get();
 
         foreach ($campaigns as $campaign) {
-            $paidListens = ListenSession::where('campaign_id', $campaign->id)
-                ->where('status', ListenSession::STATUS_REWARDED)
-                ->count();
+            $paidListens = $campaign->rewardedSessionCount();
 
             $ended = $campaign->ends_at && $campaign->ends_at->isPast();
 

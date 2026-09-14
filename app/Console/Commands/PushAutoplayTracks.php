@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\CampaignAssignment;
+use App\Models\DeviceRental;
 use App\Models\UserDevice;
 use App\Services\FirebaseMessagingService;
 use Illuminate\Console\Command;
@@ -19,9 +20,12 @@ class PushAutoplayTracks extends Command
         $limit = (int) $this->option('limit');
         $sent = 0;
 
+        // Devices that are actively rented are driven by tracks:distribute
+        // (catalog tracks), so skip them here to avoid playback conflicts.
         $devices = UserDevice::where('free_move', true)
             ->whereNotNull('fcm_token')
             ->whereHas('user', fn ($q) => $q->where('status', 'active'))
+            ->whereDoesntHave('user.rentals', fn ($q) => $q->where('status', DeviceRental::STATUS_ACTIVE))
             ->with('user')
             ->limit($limit)
             ->get();

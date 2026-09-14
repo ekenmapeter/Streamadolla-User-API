@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Jobs\DistributeCampaignJob;
 use App\Models\PromoCampaign;
+use App\Models\Track;
 use App\Services\PaystackService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -29,8 +30,13 @@ class PaystackWebhookController extends Controller
         $data = $request->input('data', []);
         $reference = (string) ($data['reference'] ?? '');
         $metadata = $data['metadata'] ?? [];
+        $kind = $metadata['kind'] ?? null;
 
         try {
+            if ($kind === 'track_funding') {
+                return $this->handleTrackFunding($reference, $metadata, $data);
+            }
+
             $campaign = PromoCampaign::where('payment_reference', $reference)
                 ->orWhere('id', $metadata['campaign_id'] ?? 0)
                 ->first();
@@ -44,13 +50,36 @@ class PaystackWebhookController extends Controller
             return response()->json(['status' => 'ok', 'note' => 'campaign not found']);
         }
 
-        if ($data['status'] === 'success' && (float) $campaign->amount_paid_ngn === (int) $data['amount']) {
+        if ($data['status'] === 'success' && (int) $campaign->amount_paid_ngn === (int) $data['amount']) {
             $campaign->update([
                 'status' => PromoCampaign::STATUS_ACTIVE,
                 'funded_at' => now(),
             ]);
 
             DistributeCampaignJob::dispatch($campaign->id);
+        }
+
+        return response()->json(['status' => 'ok']);
+    }
+
+    private function handleTrackFunding(string $reference, array $metadata, array $data)
+    {
+        $track = Track::where('payment_reference', $reference)
+            ->orWhere('id', $metadata['track_id'] ?? 0)
+            ->first();
+
+        if (! $track) {
+            Log::warning('Paystack webhook: no matching track', ['reference' => $reference, 'metadata' => $metadata]);
+
+            return response()->json(['status' => 'ok', 'note' => 'track not found']);
+        }
+
+        if ($data['status'] === 'success' && (int) $track->amount_paid_ngn === (int) $data['amount']) {
+            $track->update([
+                'status' => Track::STATUS_PENDING_APPROVAL,
+            ]);
+
+            Log::info('Track payment received, awaiting admin approval', ['track_id' => $track->id]);
         }
 
         return response()->json(['status' => 'ok']);

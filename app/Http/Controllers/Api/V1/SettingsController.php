@@ -58,7 +58,7 @@ class SettingsController extends Controller
      * Locates the newest APK in public/download so the app can auto-update
      * without the Play Store. Returns null when no APK is published.
      *
-     * @return array{version: string, url: string, size: int, filename: string}|null
+     * @return array{version: string, url: string, size: int, filename: string, sha256: string, released_at: string}|null
      */
     private function latestApk(): ?array
     {
@@ -73,13 +73,21 @@ class SettingsController extends Controller
         $file = $files[0];
         $filename = basename($file);
 
-        $version = (string) (AppSetting::get('app_version') ?? '1.0.0');
+        $version = (string) (AppSetting::get('app_version') ?? '');
+
+        // Fall back to the version baked into the filename (e.g. app-v1.2.0.apk)
+        if ($version === '' && preg_match('/v?(\d+\.\d+\.\d+)/', $filename, $m)) {
+            $version = $m[1];
+        }
+        $version = $version !== '' ? $version : '1.0.0';
 
         return [
             'version' => $version,
             'url' => url('download/' . $filename),
             'size' => (int) filesize($file),
             'filename' => $filename,
+            'sha256' => hash_file('sha256', $file),
+            'released_at' => date('Y-m-d H:i:s', filemtime($file)),
         ];
     }
 }
