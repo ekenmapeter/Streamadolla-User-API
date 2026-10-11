@@ -36,6 +36,9 @@ class AudioReachSeeder extends Seeder
             ['min_app_version', '1.0.0', 'app', 'Minimum app version the server will accept'],
             ['rental_enabled', true, 'rentals', 'Whether the device rental (remote playback) feature is enabled'],
             ['rental_rate_per_stream', 5, 'rentals', 'Amount paid to a user per streamed track while their device is rented'],
+            ['vendor_rate_per_stream', 5, 'vendors', 'Amount paid to a vendor per streamed assignment on their fleet device'],
+            ['vendor_min_seconds', 30, 'vendors', 'Minimum stream duration before a vendor device session can be rewarded'],
+            ['vendor_max_streams_per_device_per_day', 50, 'vendors', 'Max rewarded streams per vendor device per day'],
         ];
 
         foreach ($settings as [$key, $value, $group, $description]) {

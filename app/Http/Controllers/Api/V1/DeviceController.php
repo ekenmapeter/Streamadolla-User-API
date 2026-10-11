@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Validator;
 
 class DeviceController extends Controller
 {
-    public function register(Request $request)
+    public function register(Request $request, \App\Services\VendorDeviceService $vendorDevices)
     {
         $user = $request->user();
 
@@ -34,6 +34,10 @@ class DeviceController extends Controller
                 'last_seen_at' => now(),
             ]
         );
+
+        // Vendors: mirror the phone into the fleet so the command center can
+        // assign campaigns straight to it.
+        $vendorDevices->syncFleetDevice($user, $device);
 
         return response()->json([
             'success' => true,

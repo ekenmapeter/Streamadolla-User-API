@@ -13,7 +13,7 @@ class WalletService
     {
         $credited = WalletTransaction::where('user_id', $user->id)
             ->where('status', WalletTransaction::STATUS_CREDITED)
-            ->whereIn('type', [WalletTransaction::TYPE_REWARD, WalletTransaction::TYPE_BONUS, WalletTransaction::TYPE_RENTAL])
+            ->whereIn('type', [WalletTransaction::TYPE_REWARD, WalletTransaction::TYPE_BONUS, WalletTransaction::TYPE_RENTAL, WalletTransaction::TYPE_VENDOR])
             ->sum('amount');
 
         $paidOut = WalletTransaction::where('user_id', $user->id)

@@ -78,6 +78,8 @@ use App\Http\Controllers\Api\V1\WalletController;
 use App\Http\Controllers\Api\V1\SettingsController;
 use App\Http\Controllers\Api\V1\DeviceController as ListenerDeviceController;
 use App\Http\Controllers\Api\V1\PaystackWebhookController;
+use App\Http\Controllers\Api\V1\VendorController;
+use App\Http\Controllers\Api\V1\VendorSessionController;
 
 Route::prefix('v1')->group(function () {
     // Public
@@ -87,12 +89,25 @@ Route::prefix('v1')->group(function () {
     Route::get('/app/latest', [SettingsController::class, 'latest']);
     Route::post('/webhooks/paystack', [PaystackWebhookController::class, 'handle']);
 
-    // Authenticated (listener only)
-    Route::middleware(['auth:sanctum', 'role:listener'])->group(function () {
+    // Authenticated (any app role – listener and vendor devices both register
+    // their phones so the fleet can reach them).
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/device/register', [ListenerDeviceController::class, 'register']);
+        Route::post('/device/heartbeat', [ListenerDeviceController::class, 'heartbeat']);
+    });
+
+    // Authenticated (listener or vendor – shared account & wallet surface)
+    Route::middleware(['auth:sanctum', 'role:listener,vendor'])->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
         Route::put('/me', [AuthController::class, 'updateMe']);
 
+        Route::get('/wallet', [WalletController::class, 'index']);
+        Route::post('/wallet/payout-request', [WalletController::class, 'requestPayout']);
+    });
+
+    // Authenticated (listener only)
+    Route::middleware(['auth:sanctum', 'role:listener'])->group(function () {
         Route::get('/feed', [FeedController::class, 'index']);
         Route::get('/activities', [ActivityController::class, 'index']);
         Route::post('/listen/{campaign}/start', [ListenController::class, 'start']);
@@ -108,12 +123,18 @@ Route::prefix('v1')->group(function () {
         Route::post('/rentals/stop', [RentalController::class, 'stop']);
         Route::post('/rentals/assignments/{assignment}/status', [RentalController::class, 'assignmentStatus']);
 
-        Route::get('/wallet', [WalletController::class, 'index']);
-        Route::post('/wallet/payout-request', [WalletController::class, 'requestPayout']);
-
         Route::get('/settings', [SettingsController::class, 'index']);
+    });
 
-        Route::post('/device/register', [ListenerDeviceController::class, 'register']);
-        Route::post('/device/heartbeat', [ListenerDeviceController::class, 'heartbeat']);
+    // Authenticated (vendor only)
+    Route::middleware(['auth:sanctum', 'role:vendor'])->group(function () {
+        Route::get('/vendor/devices', [VendorController::class, 'devices']);
+        Route::put('/vendor/devices/{device}', [VendorController::class, 'update']);
+        Route::get('/vendor/earnings', [VendorController::class, 'earnings']);
+
+        Route::post('/vendor/sessions/{assignment}/start', [VendorSessionController::class, 'start']);
+        Route::post('/vendor/sessions/{assignment}/checkpoint', [VendorSessionController::class, 'checkpoint']);
+        Route::post('/vendor/sessions/{assignment}/complete', [VendorSessionController::class, 'complete']);
+        Route::post('/vendor/sessions/{assignment}/control', [VendorSessionController::class, 'control']);
     });
 });

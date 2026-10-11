@@ -19,6 +19,7 @@ class AuthController extends Controller
             'email' => 'required|email|max:255|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
             'phone' => 'nullable|string|max:30',
+            'role' => 'sometimes|in:' . User::ROLE_LISTENER . ',' . User::ROLE_VENDOR,
             'genre_prefs' => 'nullable|array',
             'genre_prefs.*' => 'string|max:50',
         ]);
@@ -30,21 +31,25 @@ class AuthController extends Controller
             ], 422);
         }
 
+        $role = $request->input('role', User::ROLE_LISTENER);
+
         $user = User::create([
             'name' => $request->name,
             'email' => strtolower($request->email),
             'password' => $request->password,
-            'role' => User::ROLE_LISTENER,
+            'role' => $role,
             'phone' => $request->phone,
             'status' => 'active',
             'ip_address' => $request->ip(),
         ]);
 
-        ListenerProfile::create([
-            'user_id' => $user->id,
-            'genre_prefs' => $request->input('genre_prefs', []),
-            'trust_level' => 0,
-        ]);
+        if ($role === User::ROLE_LISTENER) {
+            ListenerProfile::create([
+                'user_id' => $user->id,
+                'genre_prefs' => $request->input('genre_prefs', []),
+                'trust_level' => 0,
+            ]);
+        }
 
         $verification->issueCode($user);
 
@@ -84,7 +89,7 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $token = $user->createToken('listener-mobile')->plainTextToken;
+        $token = $user->createToken('mobile')->plainTextToken;
 
         return response()->json([
             'success' => true,
@@ -117,17 +122,17 @@ class AuthController extends Controller
             ], 401);
         }
 
-        if ($user->role !== User::ROLE_LISTENER) {
-            return response()->json([
-                'success' => false,
-                'message' => 'This account is not a listener account.',
-            ], 403);
-        }
-
         if ($user->status !== 'active') {
             return response()->json([
                 'success' => false,
                 'message' => 'Your account has been suspended. Contact support for help.',
+            ], 403);
+        }
+
+        if (! in_array($user->role, [User::ROLE_LISTENER, User::ROLE_VENDOR])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This account is not a listener or vendor account.',
             ], 403);
         }
 
@@ -139,7 +144,7 @@ class AuthController extends Controller
             ], 403);
         }
 
-        $token = $user->createToken('listener-mobile')->plainTextToken;
+        $token = $user->createToken('mobile')->plainTextToken;
 
         $user->update(['ip_address' => $request->ip()]);
 
@@ -214,6 +219,7 @@ class AuthController extends Controller
             'phone' => $user->phone,
             'role' => $user->role,
             'email_verified' => (bool) $user->email_verified_at,
+            'vendor' => $user->isVendor(),
             'listener' => $user->listenerProfile ? [
                 'genre_prefs' => $user->listenerProfile->genre_prefs ?? [],
                 'trust_level' => $user->listenerProfile->trust_level,

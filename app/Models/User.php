@@ -18,6 +18,7 @@ class User extends Authenticatable
     public const ROLE_ADMIN = 'admin';
     public const ROLE_ARTIST = 'artist';
     public const ROLE_LISTENER = 'listener';
+    public const ROLE_VENDOR = 'vendor';
 
     /**
      * The attributes that are mass assignable.
@@ -72,6 +73,11 @@ class User extends Authenticatable
         return $this->role === self::ROLE_LISTENER;
     }
 
+    public function isVendor(): bool
+    {
+        return $this->role === self::ROLE_VENDOR;
+    }
+
     public function artistProfile(): HasOne
     {
         return $this->hasOne(ArtistProfile::class);
@@ -85,6 +91,16 @@ class User extends Authenticatable
     public function userDevices(): HasMany
     {
         return $this->hasMany(UserDevice::class);
+    }
+
+    public function devices(): HasMany
+    {
+        return $this->hasMany(Device::class);
+    }
+
+    public function deviceSessions(): HasMany
+    {
+        return $this->hasMany(DeviceSession::class, 'vendor_id');
     }
 
     public function campaignAssignments(): HasMany

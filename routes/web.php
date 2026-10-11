@@ -69,6 +69,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/payouts', [AdminCommandCenterController::class, 'payouts'])->name('admin.payouts');
     Route::get('/admin/listeners', [AdminCommandCenterController::class, 'listeners'])->name('admin.listeners');
     Route::get('/admin/listeners/{user}', [AdminCommandCenterController::class, 'listenerDetail'])->name('admin.listeners.detail')->withTrashed();
+    Route::get('/admin/vendors', [AdminCommandCenterController::class, 'vendors'])->name('admin.vendors');
+    Route::get('/admin/vendors/{user}', [AdminCommandCenterController::class, 'vendorDetail'])->name('admin.vendors.detail');
     Route::get('/admin/api-docs', [AdminCommandCenterController::class, 'apiDocs'])->name('admin.api-docs');
     Route::post('/admin/payouts/{payout}/mark-paid', [AdminCommandCenterController::class, 'markPayoutPaid'])->name('admin.payouts.mark-paid');
     Route::post('/admin/payouts/{payout}/reject', [AdminCommandCenterController::class, 'rejectPayout'])->name('admin.payouts.reject');

@@ -39,6 +39,9 @@
                 <a href="{{ route('admin.listeners') }}" class="flex items-center space-x-3 px-4 py-2.5 rounded-full transition {{ request()->routeIs('admin.listeners') ? 'neu-inset' : 'neu-btn' }}" style="{{ request()->routeIs('admin.listeners') ? 'color: var(--neu-accent)' : 'color: var(--neu-text)' }}">
                     <i class="fas fa-users w-5"></i><span>Users</span>
                 </a>
+                <a href="{{ route('admin.vendors') }}" class="flex items-center space-x-3 px-4 py-2.5 rounded-full transition {{ request()->routeIs('admin.vendors') ? 'neu-inset' : 'neu-btn' }}" style="{{ request()->routeIs('admin.vendors') ? 'color: var(--neu-accent)' : 'color: var(--neu-text)' }}">
+                    <i class="fas fa-store w-5"></i><span>Vendors</span>
+                </a>
                 <a href="{{ route('admin.api-docs') }}" class="flex items-center space-x-3 px-4 py-2.5 rounded-full transition {{ request()->routeIs('admin.api-docs') ? 'neu-inset' : 'neu-btn' }}" style="{{ request()->routeIs('admin.api-docs') ? 'color: var(--neu-accent)' : 'color: var(--neu-text)' }}">
                     <i class="fas fa-code w-5"></i><span>API Docs</span>
                 </a>
@@ -81,6 +84,7 @@
                     <a href="{{ route('admin.campaigns') }}" class="block px-4 py-2.5 rounded-full hover:bg-black/5" style="color: var(--neu-text)">Campaigns</a>
                     <a href="{{ route('admin.tracks') }}" class="block px-4 py-2.5 rounded-full hover:bg-black/5" style="color: var(--neu-text)">Track List</a>
                     <a href="{{ route('admin.listeners') }}" class="block px-4 py-2.5 rounded-full hover:bg-black/5" style="color: var(--neu-text)">Users</a>
+                    <a href="{{ route('admin.vendors') }}" class="block px-4 py-2.5 rounded-full hover:bg-black/5" style="color: var(--neu-text)">Vendors</a>
                     <a href="{{ route('admin.api-docs') }}" class="block px-4 py-2.5 rounded-full hover:bg-black/5" style="color: var(--neu-text)">API Docs</a>
                     <a href="{{ route('admin.payouts') }}" class="block px-4 py-2.5 rounded-full hover:bg-black/5" style="color: var(--neu-text)">Payouts</a>
                     <a href="{{ route('admin.rewards') }}" class="block px-4 py-2.5 rounded-full hover:bg-black/5" style="color: var(--neu-text)">Reward Settings</a>

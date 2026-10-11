@@ -73,6 +73,25 @@
         </a>
     </div>
 
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        <a href="{{ route('admin.vendors') }}" class="bg-gray-900 border border-white/10 rounded-2xl p-6 hover:border-emerald-500/50 transition">
+            <p class="text-sm text-gray-400">Vendors</p>
+            <p class="text-2xl font-extrabold mt-2 text-emerald-400">{{ $stats['vendors'] }}</p>
+        </a>
+        <div class="bg-gray-900 border border-white/10 rounded-2xl p-6">
+            <p class="text-sm text-gray-400">Vendor Streams Today</p>
+            <p class="text-2xl font-extrabold mt-2">{{ $stats['vendor_streams_today'] }}</p>
+        </div>
+        <div class="bg-gray-900 border border-white/10 rounded-2xl p-6">
+            <p class="text-sm text-gray-400">Vendor Paid Today</p>
+            <p class="text-2xl font-extrabold mt-2 text-green-400">₦{{ number_format($stats['vendor_paid_today']) }}</p>
+        </div>
+        <div class="bg-gray-900 border border-white/10 rounded-2xl p-6">
+            <p class="text-sm text-gray-400">Vendor Rate / Stream</p>
+            <p class="text-2xl font-extrabold mt-2 text-emerald-400">₦{{ number_format((int) \App\Models\AppSetting::get('vendor_rate_per_stream', 5)) }}</p>
+        </div>
+    </div>
+
     <div class="flex items-center justify-between mb-5">
         <h2 class="text-lg font-bold">Recent Listens</h2>
     </div>

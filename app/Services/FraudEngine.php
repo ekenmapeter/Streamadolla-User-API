@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\DeviceSession;
 use App\Models\ListenSession;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
@@ -40,5 +41,46 @@ class FraudEngine
         $count = Cache::increment($cacheKey);
 
         return $count ?? 0;
+    }
+
+    // ── Vendor device gates ──────────────────────────────────────────────
+
+    public function hitDeviceDailyLimit(int $deviceId, int $maxPerDay): bool
+    {
+        $cacheKey = 'vendor_stream_count:' . $deviceId . ':' . now()->toDateString();
+
+        return (int) Cache::get($cacheKey, 0) >= $maxPerDay;
+    }
+
+    public function incrementDeviceDailyCount(int $deviceId): int
+    {
+        $cacheKey = 'vendor_stream_count:' . $deviceId . ':' . now()->toDateString();
+        $count = Cache::increment($cacheKey);
+
+        return $count ?? 0;
+    }
+
+    /**
+     * Quality flags for a completed vendor device session.
+     *
+     * NOTE: unlike listener sessions, the foreground flag is deliberately not
+     * checked here - vendor devices legitimately stream in the background.
+     * The wall-clock duration, checkpoint cadence and daily cap replace it.
+     */
+    public function deviceSessionRisk(DeviceSession $session): array
+    {
+        $flags = [];
+
+        if ($session->completed_at && $session->started_at
+            && abs($session->completed_at->diffInSeconds($session->started_at)) < $session->min_duration_seconds - 5) {
+            $flags[] = self::FLAG_TOO_FAST;
+        }
+
+        $checkpoints = $session->checkpoints ?? [];
+        if (count($checkpoints) < 2) {
+            $flags[] = 'missing_checkpoints';
+        }
+
+        return $flags;
     }
 }

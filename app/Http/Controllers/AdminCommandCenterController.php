@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\AppSetting;
 use App\Models\CampaignPackage;
+use App\Models\Device;
 use App\Models\DeviceRental;
+use App\Models\DeviceSession;
 use App\Models\ListenSession;
 use App\Models\ListenerProfile;
 use App\Models\PromoCampaign;
@@ -36,6 +38,15 @@ class AdminCommandCenterController extends Controller
             'rental_streams_today' => StreamPlay::where('status', StreamPlay::STATUS_REWARDED)->whereDate('created_at', today())->count(),
             'rental_paid_today' => (int) StreamPlay::where('status', StreamPlay::STATUS_REWARDED)->whereDate('created_at', today())->sum('reward_amount'),
             'tracks_pending' => Track::where('status', Track::STATUS_PENDING_APPROVAL)->count(),
+            'vendors' => User::where('role', User::ROLE_VENDOR)->count(),
+            'vendor_streams_today' => StreamPlay::where('status', StreamPlay::STATUS_REWARDED)
+                ->whereDate('created_at', today())
+                ->whereHas('user', fn ($q) => $q->where('role', User::ROLE_VENDOR))
+                ->count(),
+            'vendor_paid_today' => (int) StreamPlay::where('status', StreamPlay::STATUS_REWARDED)
+                ->whereDate('created_at', today())
+                ->whereHas('user', fn ($q) => $q->where('role', User::ROLE_VENDOR))
+                ->sum('reward_amount'),
         ];
 
         $recentSessions = ListenSession::with(['assignment.campaign:id,title', 'listener:id,name'])
@@ -236,6 +247,129 @@ class AdminCommandCenterController extends Controller
         return view('admin.listeners', compact('listeners', 'metrics', 'trustDist', 'topGenres', 'topEarners', 'sort'));
     }
 
+    /**
+     * Vendor fleet overview – every vendor with per-vendor earnings and
+     * fraud visibility (mirrors the listeners admin page).
+     */
+    public function vendors(Request $request)
+    {
+        $query = User::query()->where('role', User::ROLE_VENDOR);
+
+        if ($q = trim((string) $request->query('q'))) {
+            $query->where(function ($b) use ($q) {
+                $b->where('name', 'like', "%{$q}%")
+                    ->orWhere('email', 'like', "%{$q}%")
+                    ->orWhere('phone', 'like', "%{$q}%");
+            });
+        }
+
+        $sort = $request->query('sort', 'recent');
+        $sortMap = [
+            'recent' => fn ($b) => $b->orderByDesc('created_at'),
+            'earned' => fn ($b) => $b->orderByDesc('total_earned'),
+            'streams' => fn ($b) => $b->orderByDesc('rewarded_streams_count'),
+            'devices' => fn ($b) => $b->orderByDesc('devices_count'),
+        ];
+        ($sortMap[$sort] ?? $sortMap['recent'])($query);
+
+        $vendors = $query
+            ->withCount('devices')
+            ->withCount(['streamPlays as rewarded_streams_count' => fn ($q) => $q->where('status', StreamPlay::STATUS_REWARDED)])
+            ->withCount(['streamPlays as streams_today_count' => fn ($q) => $q->where('status', StreamPlay::STATUS_REWARDED)->whereDate('created_at', today())])
+            ->withCount(['deviceSessions as fraud_sessions_count' => fn ($q) => $q->where('status', DeviceSession::STATUS_FRAUD)])
+            ->withSum(['walletTransactions as total_earned' => fn ($q) => $q->whereIn('type', [WalletTransaction::TYPE_VENDOR, WalletTransaction::TYPE_RENTAL])->where('status', WalletTransaction::STATUS_CREDITED)], 'amount')
+            ->withMax('devices as last_seen_at', 'last_seen')
+            ->paginate(15)
+            ->withQueryString();
+
+        $vendorCredits = fn ($q) => $q
+            ->whereHas('user', fn ($uq) => $uq->where('role', User::ROLE_VENDOR))
+            ->whereIn('type', [WalletTransaction::TYPE_VENDOR, WalletTransaction::TYPE_RENTAL])
+            ->where('status', WalletTransaction::STATUS_CREDITED);
+
+        $metrics = [
+            'total' => User::where('role', User::ROLE_VENDOR)->count(),
+            'verified' => User::where('role', User::ROLE_VENDOR)->whereNotNull('email_verified_at')->count(),
+            'devices' => Device::whereNotNull('user_id')->count(),
+            'active_today' => StreamPlay::where('status', StreamPlay::STATUS_REWARDED)
+                ->whereDate('created_at', today())
+                ->whereHas('user', fn ($q) => $q->where('role', User::ROLE_VENDOR))
+                ->distinct('user_id')->count('user_id'),
+            'streams_today' => StreamPlay::where('status', StreamPlay::STATUS_REWARDED)
+                ->whereDate('created_at', today())
+                ->whereHas('user', fn ($q) => $q->where('role', User::ROLE_VENDOR))
+                ->count(),
+            'total_earned' => (int) $vendorCredits(WalletTransaction::query())->sum('amount'),
+            'fraud_sessions' => DeviceSession::where('status', DeviceSession::STATUS_FRAUD)->count(),
+            'pending_payouts' => PayoutRequest::whereHas('user', fn ($q) => $q->where('role', User::ROLE_VENDOR))->pending()->count(),
+        ];
+
+        $topEarners = User::where('role', User::ROLE_VENDOR)
+            ->withCount('devices')
+            ->withSum(['walletTransactions as earned' => fn ($q) => $q->whereIn('type', [WalletTransaction::TYPE_VENDOR, WalletTransaction::TYPE_RENTAL])->where('status', WalletTransaction::STATUS_CREDITED)], 'amount')
+            ->orderByDesc('earned')
+            ->limit(5)
+            ->get();
+
+        return view('admin.vendors', compact('vendors', 'metrics', 'topEarners', 'sort'));
+    }
+
+    /**
+     * Per-vendor detail: devices, earnings record and flagged sessions.
+     */
+    public function vendorDetail(User $user)
+    {
+        abort_unless($user->role === User::ROLE_VENDOR, 404);
+
+        $devices = $user->devices()->orderByDesc('last_seen')->get();
+
+        $deviceTotals = $user->streamPlays()
+            ->where('stream_plays.status', StreamPlay::STATUS_REWARDED)
+            ->join('device_assignments', 'device_assignments.id', '=', 'stream_plays.device_assignment_id')
+            ->selectRaw('device_assignments.device_id, count(*) as streams, sum(stream_plays.reward_amount) as earned')
+            ->groupBy('device_assignments.device_id')
+            ->pluck('streams', 'device_id');
+
+        $deviceEarned = $user->streamPlays()
+            ->where('stream_plays.status', StreamPlay::STATUS_REWARDED)
+            ->join('device_assignments', 'device_assignments.id', '=', 'stream_plays.device_assignment_id')
+            ->selectRaw('device_assignments.device_id, sum(stream_plays.reward_amount) as earned')
+            ->groupBy('device_assignments.device_id')
+            ->pluck('earned', 'device_id');
+
+        $streams = $user->streamPlays()
+            ->with(['assignment.device:id,name,device_id', 'track:id,title'])
+            ->where('status', StreamPlay::STATUS_REWARDED)
+            ->orderByDesc('created_at')
+            ->limit(30)
+            ->get();
+
+        $sessions = $user->deviceSessions()
+            ->with('device:id,name,device_id')
+            ->orderByDesc('created_at')
+            ->limit(30)
+            ->get();
+
+        $stats = [
+            'total_streams' => $user->streamPlays()->where('status', StreamPlay::STATUS_REWARDED)->count(),
+            'total_earned' => (int) $user->walletTransactions()
+                ->whereIn('type', [WalletTransaction::TYPE_VENDOR, WalletTransaction::TYPE_RENTAL])
+                ->where('status', WalletTransaction::STATUS_CREDITED)
+                ->sum('amount'),
+            'total_paid_out' => (int) $user->walletTransactions()
+                ->where('type', WalletTransaction::TYPE_PAYOUT)
+                ->where('status', WalletTransaction::STATUS_CREDITED)
+                ->sum('amount'),
+            'fraud_sessions' => (int) $user->deviceSessions()->where('status', DeviceSession::STATUS_FRAUD)->count(),
+            'open_sessions' => (int) $user->deviceSessions()->where('status', DeviceSession::STATUS_OPEN)->count(),
+            'balance' => (int) app(\App\Services\WalletService::class)->balance($user),
+        ];
+
+        $transactions = $user->walletTransactions()->orderByDesc('created_at')->limit(20)->get();
+
+        return view('admin.vendor-detail', compact('user', 'devices', 'deviceTotals', 'deviceEarned', 'streams', 'sessions', 'stats', 'transactions'));
+    }
+
     public function listenerDetail(User $user)
     {
         abort_unless(in_array($user->role, [User::ROLE_LISTENER, User::ROLE_ARTIST]), 404);
@@ -347,6 +481,9 @@ class AdminCommandCenterController extends Controller
             ['min_payout', 'Min payout (₦)', '1000'],
             ['payout_hold_hours', 'Payout hold (hours)', '72'],
             ['daily_review_limit', 'Max sessions / day', '50'],
+            ['vendor_rate_per_stream', 'Vendor reward per stream (₦)', '5'],
+            ['vendor_min_seconds', 'Vendor min stream (seconds)', '30'],
+            ['vendor_max_streams_per_device_per_day', 'Vendor max streams / device / day', '50'],
         ];
 
         return view('admin.app-settings', compact('settings', 'existing', 'fields'));

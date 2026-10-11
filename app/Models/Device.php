@@ -16,13 +16,17 @@ class Device extends Model
         'fcm_token',
         'proxy_url',
         'status',
+        'total_streams',
+        'total_earned',
         'last_seen',
         'metadata'
     ];
 
     protected $casts = [
         'metadata' => 'array',
-        'last_seen' => 'datetime'
+        'last_seen' => 'datetime',
+        'total_streams' => 'integer',
+        'total_earned' => 'integer',
     ];
 
     // ── Relationships ────────────────────────────────────────────────────
@@ -33,6 +37,14 @@ class Device extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Vendor streaming sessions for this device.
+     */
+    public function sessions()
+    {
+        return $this->hasMany(DeviceSession::class);
     }
 
     /**
