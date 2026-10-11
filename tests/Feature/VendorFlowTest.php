@@ -450,6 +450,23 @@ class VendorFlowTest extends TestCase
 
     // ── Admin monitoring ────────────────────────────────────────────────
 
+    public function test_vendor_can_use_shared_me_and_wallet_routes(): void
+    {
+        $this->seedBase();
+        $vendor = $this->registerVendor();
+        $this->vendorToken = $this->vendorToken($vendor);
+
+        $this->getJson('/api/v1/wallet', [
+            'Authorization' => 'Bearer ' . $this->vendorToken,
+        ])->assertOk()->assertJson(['success' => true, 'balance' => 0]);
+
+        $this->putJson('/api/v1/me', ['name' => 'Renamed Vendor'], [
+            'Authorization' => 'Bearer ' . $this->vendorToken,
+        ])->assertOk();
+
+        $this->assertSame('Renamed Vendor', $vendor->fresh()->name);
+    }
+
     public function test_admin_vendor_pages_render(): void
     {
         $this->seedBase();
