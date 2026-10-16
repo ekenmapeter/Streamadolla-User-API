@@ -1,0 +1,8 @@
+# Vendor-only APK staging area (Streamadolla Vendor app).
+# Direct download links work, but the folder can never be browsed/listed.
+Options -Indexes
+
+# Block dotfiles (e.g. this .htaccess itself).
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>

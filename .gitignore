@@ -25,3 +25,4 @@ Thumbs.db
 /storage/app/firebase-credentials.json
 /storage/geoip
 .htaccess
+!public/vendor-download/.htaccess
