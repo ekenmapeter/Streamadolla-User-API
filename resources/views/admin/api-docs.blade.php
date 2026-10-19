@@ -177,6 +177,7 @@
                 @foreach ([
                     ['POST', '/auth/register', 'Create a listener account. Body: name, email, password, password_confirmation, genre_prefs[]. Issues a 6-digit email code.'],
                     ['POST', '/auth/verify-email', 'Verify the code. Body: email, code. Returns the Bearer token on success.'],
+                    ['POST', '/auth/resend-verification', 'Re-send the email code. Body: email. Rate-limited: returns retry_after seconds.'],
                     ['POST', '/auth/login', 'Login. Body: email, password. Unverified accounts get 403 with requires_verification=true.'],
                     ['POST', '/auth/logout', 'Revoke the current token.'],
                     ['GET', '/me', 'Return the authenticated user profile.'],

@@ -13,7 +13,7 @@ class EmailVerificationService
 
     private const TTL_SECONDS = 600;
 
-    private const RESEND_COOLDOWN_SECONDS = 300;
+    public const RESEND_COOLDOWN_SECONDS = 300;
 
     public function issueCode(User $user): string
     {

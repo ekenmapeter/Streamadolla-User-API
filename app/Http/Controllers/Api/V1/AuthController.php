@@ -52,11 +52,58 @@ class AuthController extends Controller
         }
 
         $verification->issueCode($user);
+        $verification->setResendCooldown($user);
 
         return response()->json([
             'success' => true,
             'message' => 'Account created. A verification code was sent to your email.',
+            'retry_after' => EmailVerificationService::RESEND_COOLDOWN_SECONDS,
         ], 201);
+    }
+
+    /**
+     * Re-issues a verification code, rate-limited per account.
+     */
+    public function resendVerification(Request $request, EmailVerificationService $verification)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email|exists:users,email',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $user = User::where('email', strtolower($request->email))->firstOrFail();
+
+        if ($user->email_verified_at) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Email already verified.',
+            ], 422);
+        }
+
+        $wait = $verification->resendAfter($user);
+
+        if ($wait > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => "Please wait {$wait} seconds before requesting another code.",
+                'retry_after' => $wait,
+            ], 429);
+        }
+
+        $verification->issueCode($user);
+        $verification->setResendCooldown($user);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'A new verification code was sent to your email.',
+            'retry_after' => EmailVerificationService::RESEND_COOLDOWN_SECONDS,
+        ]);
     }
 
     public function verifyEmail(Request $request, EmailVerificationService $verification)
@@ -99,7 +146,7 @@ class AuthController extends Controller
         ]);
     }
 
-    public function login(Request $request)
+    public function login(Request $request, EmailVerificationService $verification)
     {
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
@@ -141,6 +188,7 @@ class AuthController extends Controller
                 'success' => false,
                 'message' => 'Email not verified. Please verify your email first.',
                 'requires_verification' => true,
+                'retry_after' => $verification->resendAfter($user),
             ], 403);
         }
 

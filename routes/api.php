@@ -85,6 +85,7 @@ Route::prefix('v1')->group(function () {
     // Public
     Route::post('/auth/register', [AuthController::class, 'register']);
     Route::post('/auth/verify-email', [AuthController::class, 'verifyEmail']);
+    Route::post('/auth/resend-verification', [AuthController::class, 'resendVerification']);
     Route::post('/auth/login', [AuthController::class, 'login']);
     Route::get('/app/latest', [SettingsController::class, 'latest']);
     Route::get('/app/vendor/latest', [SettingsController::class, 'vendorLatest']);

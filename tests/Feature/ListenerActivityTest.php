@@ -192,4 +192,36 @@ class ListenerActivityTest extends TestCase
             @unlink($apkPath);
         }
     }
+
+    public function test_resend_verification_is_rate_limited_and_issues_a_new_code(): void
+    {
+        $this->postJson('/api/v1/auth/register', [
+            'name' => 'Resend Listener',
+            'email' => 'resend@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ])->assertCreated()->assertJsonPath('retry_after', 300);
+
+        $firstCode = Cache::get('email_verify:resend@example.com')['code'];
+
+        $limited = $this->postJson('/api/v1/auth/resend-verification', [
+            'email' => 'resend@example.com',
+        ])->assertStatus(429);
+
+        $this->assertGreaterThan(0, $limited->json('retry_after'));
+
+        $this->travel(301)->seconds();
+
+        $this->postJson('/api/v1/auth/resend-verification', [
+            'email' => 'resend@example.com',
+        ])->assertOk()->assertJsonPath('retry_after', 300);
+
+        $newCode = Cache::get('email_verify:resend@example.com')['code'];
+        $this->assertNotSame($firstCode, $newCode);
+
+        $this->postJson('/api/v1/auth/verify-email', [
+            'email' => 'resend@example.com',
+            'code' => $newCode,
+        ])->assertOk();
+    }
 }
