@@ -7,13 +7,14 @@ use App\Models\AppSetting;
 class ApkPublish
 {
     /**
-     * Locates the newest published APK in public/download.
+     * Locates the newest published APK in the given public folder.
      *
      * @return array{filename: string, url: string, version: string, size: int, sha256: string, released_at: string}|null
      */
-    public static function latest(): ?array
+    public static function latest(string $folder = 'download', string $versionSetting = 'app_version'): ?array
     {
-        $files = glob(public_path('download/*.apk')) ?: [];
+        $folder = trim($folder, '/');
+        $files = glob(public_path($folder . '/*.apk')) ?: [];
 
         if (empty($files)) {
             return null;
@@ -33,12 +34,12 @@ class ApkPublish
             $version = $m[1];
         }
         if ($version === '') {
-            $version = (string) (AppSetting::get('app_version') ?? '1.0.0');
+            $version = (string) (AppSetting::get($versionSetting) ?? '1.0.0');
         }
 
         return [
             'filename' => $filename,
-            'url' => asset('download/' . $filename),
+            'url' => asset($folder . '/' . $filename),
             'version' => $version,
             'size' => (int) filesize($file),
             'sha256' => hash_file('sha256', $file),

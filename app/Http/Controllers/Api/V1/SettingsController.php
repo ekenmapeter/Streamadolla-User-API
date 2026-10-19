@@ -56,6 +56,32 @@ class SettingsController extends Controller
     }
 
     /**
+     * Public endpoint used by the vendor app to check for APK updates.
+     * Reads only from public/vendor-download so the listener app's
+     * /app/latest channel is never affected.
+     */
+    public function vendorLatest(Request $request)
+    {
+        $settings = AppSetting::all()->mapWithKeys(fn (AppSetting $s) => [
+            $s->key => $s->value,
+        ]);
+
+        $version = $settings['vendor_app_version'] ?? null;
+        $minVersion = $settings['vendor_min_app_version'] ?? null;
+
+        $outdated = $version !== null && $minVersion !== null
+            && version_compare((string) $minVersion, ($request->header('X-App-Version', '0.0.0'))) > 0;
+
+        return response()->json([
+            'success' => true,
+            'app_version' => $version,
+            'min_app_version' => $minVersion,
+            'force_update' => $outdated,
+            'apk' => ApkPublish::latest('vendor-download', 'vendor_app_version'),
+        ]);
+    }
+
+    /**
      * Locates the newest APK in public/download so the app can auto-update
      * without the Play Store. Returns null when no APK is published.
      */

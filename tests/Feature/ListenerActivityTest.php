@@ -172,4 +172,24 @@ class ListenerActivityTest extends TestCase
             @unlink($apkPath);
         }
     }
+
+    public function test_vendor_app_latest_uses_separate_download_folder(): void
+    {
+        $apkPath = public_path('vendor-download/test-vendor-9.9.9.apk');
+        @mkdir(dirname($apkPath), 0777, true);
+        file_put_contents($apkPath, 'fake-vendor-apk-bytes');
+        touch($apkPath, now()->addHour()->timestamp);
+
+        try {
+            $response = $this->getJson('/api/v1/app/vendor/latest')->assertOk();
+
+            $apk = $response->json('apk');
+            $this->assertNotNull($apk);
+            $this->assertSame('9.9.9', $apk['version']);
+            $this->assertStringContainsString('vendor-download/test-vendor-9.9.9.apk', $apk['url']);
+            $this->assertSame(hash('sha256', 'fake-vendor-apk-bytes'), $apk['sha256']);
+        } finally {
+            @unlink($apkPath);
+        }
+    }
 }
