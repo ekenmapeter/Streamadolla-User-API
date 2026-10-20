@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\UserDevice;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class ListenerActivityTest extends TestCase
@@ -200,7 +201,8 @@ class ListenerActivityTest extends TestCase
             'email' => 'resend@example.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
-        ])->assertCreated()->assertJsonPath('retry_after', 300);
+        ])->assertCreated()->assertJsonPath('retry_after', 300)
+            ->assertJsonPath('mail_sent', true);
 
         $firstCode = Cache::get('email_verify:resend@example.com')['code'];
 
@@ -223,5 +225,23 @@ class ListenerActivityTest extends TestCase
             'email' => 'resend@example.com',
             'code' => $newCode,
         ])->assertOk();
+    }
+
+    public function test_registration_reports_mail_delivery_failure_without_starting_cooldown(): void
+    {
+        Mail::shouldReceive('to')->andThrow(new \RuntimeException('SMTP unavailable'));
+
+        $this->postJson('/api/v1/auth/register', [
+            'name' => 'Mail Failure',
+            'email' => 'mail-failure@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ])->assertCreated()
+            ->assertJsonPath('mail_sent', false)
+            ->assertJsonPath('retry_after', 0);
+
+        $this->postJson('/api/v1/auth/resend-verification', [
+            'email' => 'mail-failure@example.com',
+        ])->assertStatus(503);
     }
 }

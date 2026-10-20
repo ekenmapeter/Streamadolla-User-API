@@ -52,12 +52,19 @@ class AuthController extends Controller
         }
 
         $verification->issueCode($user);
-        $verification->setResendCooldown($user);
+        $mailSent = $verification->mailWasSent();
+
+        if ($mailSent) {
+            $verification->setResendCooldown($user);
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'Account created. A verification code was sent to your email.',
-            'retry_after' => EmailVerificationService::RESEND_COOLDOWN_SECONDS,
+            'message' => $mailSent
+                ? 'Account created. A verification code was sent to your email.'
+                : 'Account created, but we could not send the verification email. Please tap Resend code.',
+            'mail_sent' => $mailSent,
+            'retry_after' => $mailSent ? EmailVerificationService::RESEND_COOLDOWN_SECONDS : 0,
         ], 201);
     }
 
@@ -97,6 +104,14 @@ class AuthController extends Controller
         }
 
         $verification->issueCode($user);
+
+        if (! $verification->mailWasSent()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'We could not send the verification email. Please try again later.',
+            ], 503);
+        }
+
         $verification->setResendCooldown($user);
 
         return response()->json([

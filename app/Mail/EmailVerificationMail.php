@@ -20,7 +20,7 @@ class EmailVerificationMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Verify your email address',
+            subject: 'Verify your Streamadolla email address',
         );
     }
 

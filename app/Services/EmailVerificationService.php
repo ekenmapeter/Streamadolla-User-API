@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Mail\EmailVerificationMail;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class EmailVerificationService
@@ -15,6 +16,13 @@ class EmailVerificationService
 
     public const RESEND_COOLDOWN_SECONDS = 300;
 
+    private bool $lastMailSent = false;
+
+    public function mailWasSent(): bool
+    {
+        return $this->lastMailSent;
+    }
+
     public function issueCode(User $user): string
     {
         $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
@@ -24,9 +32,18 @@ class EmailVerificationService
             'attempts' => 0,
         ], self::TTL_SECONDS);
 
+        $this->lastMailSent = false;
+
         try {
             Mail::to($user->email)->send(new EmailVerificationMail($user, $code));
+            $this->lastMailSent = true;
         } catch (\Throwable $e) {
+            Log::error('Verification email could not be sent.', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'mailer' => config('mail.default'),
+                'error' => $e->getMessage(),
+            ]);
             report($e);
         }
 
