@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', function() {
         this.disabled = true;
         this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Assigning...';
 
-        fetch('/api/assignments', {
+        fetch('/dashboard-api/assignments', {
             method: 'POST', headers: headers,
             body: JSON.stringify({ device_ids: [parseInt(deviceId)], platform: platform, media_url: uri, media_title: title || null })
         })
@@ -178,7 +178,7 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.addEventListener('click', function() {
             const id = this.dataset.id;
             const action = this.dataset.action;
-            const endpoint = action === 'stop' ? `/api/assignments/${id}` : `/api/assignments/${id}/control`;
+            const endpoint = action === 'stop' ? `/dashboard-api/assignments/${id}` : `/dashboard-api/assignments/${id}/control`;
             const method = action === 'stop' ? 'DELETE' : 'POST';
             const body = action === 'stop' ? undefined : JSON.stringify({ action: action });
 
@@ -208,7 +208,7 @@ document.addEventListener('DOMContentLoaded', function() {
         this.disabled = true;
         this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
 
-        fetch('/api/devices/register', {
+        fetch('/dashboard-api/devices/register', {
             method: 'POST', headers: headers,
             body: JSON.stringify({ device_id: deviceId, fcm_token: fcmToken, name: name || 'Manual Device', metadata: { type: 'manual_entry' } })
         })
@@ -224,7 +224,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.remove-device').forEach(btn => {
         btn.addEventListener('click', function() {
             if (!confirm('Remove this device from the dashboard?')) return;
-            fetch(`/api/devices/${this.dataset.deviceId}`, { method: 'DELETE', headers: headers })
+            fetch(`/dashboard-api/devices/${this.dataset.deviceId}`, { method: 'DELETE', headers: headers })
             .then(r => r.json())
             .then(data => { showNotification(data.message || 'Removed', 'success'); setTimeout(() => location.reload(), 800); })
             .catch(err => showNotification('Error: ' + err, 'error'));
@@ -237,7 +237,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const newName = prompt('Enter new phone name:', this.dataset.deviceName);
             if (!newName || newName.trim() === '' || newName === this.dataset.deviceName) return;
             
-            fetch(`/api/devices/${this.dataset.deviceId}`, { 
+            fetch(`/dashboard-api/devices/${this.dataset.deviceId}`, { 
                 method: 'PUT', 
                 headers: headers,
                 body: JSON.stringify({ name: newName.trim() })
@@ -351,7 +351,7 @@ document.addEventListener('DOMContentLoaded', function() {
         this.disabled = true;
         this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating...';
 
-        fetch('/api/campaigns', {
+        fetch('/dashboard-api/campaigns', {
             method: 'POST', headers: headers,
             body: JSON.stringify({ name, platform, tracks, channel_url: channelUrl, interstitial_every: interstitialEvery, interstitial_media_url: interstitialMediaUrl, interstitial_duration_seconds: interstitialDuration })
         })
@@ -410,7 +410,7 @@ document.addEventListener('DOMContentLoaded', function() {
         this.disabled = true;
         this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Deploying...';
 
-        fetch(`/api/campaigns/${campaignId}/deploy`, {
+        fetch(`/dashboard-api/campaigns/${campaignId}/deploy`, {
             method: 'POST', headers: headers,
             body: JSON.stringify({ device_ids: deviceIds })
         })
@@ -434,7 +434,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.delete-campaign').forEach(btn => {
         btn.addEventListener('click', function() {
             if (!confirm('Delete this campaign? Active deployments will be stopped.')) return;
-            fetch(`/api/campaigns/${this.dataset.campaignId}`, { method: 'DELETE', headers: headers })
+            fetch(`/dashboard-api/campaigns/${this.dataset.campaignId}`, { method: 'DELETE', headers: headers })
             .then(r => r.json())
             .then(data => { showNotification(data.message || 'Deleted', 'success'); setTimeout(() => location.reload(), 800); })
             .catch(err => showNotification('Error: ' + err, 'error'));
@@ -475,7 +475,7 @@ document.addEventListener('DOMContentLoaded', function() {
             this.disabled = true;
             this.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Deleting...';
 
-            fetch('/api/campaigns/bulk-delete', {
+            fetch('/dashboard-api/campaigns/bulk-delete', {
                 method: 'POST', headers: headers,
                 body: JSON.stringify({ ids: ids })
             })
@@ -635,7 +635,7 @@ document.addEventListener('DOMContentLoaded', function() {
         this.disabled = true;
         this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
 
-        fetch(`/api/campaigns/${id}`, {
+        fetch(`/dashboard-api/campaigns/${id}`, {
             method: 'PUT', headers: headers,
             body: JSON.stringify({ name, platform, tracks, channel_url: channelUrl, interstitial_every: interstitialEvery, interstitial_media_url: interstitialMediaUrl, interstitial_duration_seconds: interstitialDuration })
         })
@@ -699,7 +699,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (pollTimer) clearTimeout(pollTimer);
         
         // Cache bust with timestamp, ensure we don't use disk cache
-        fetch(`/api/dashboard/stats?t=${Date.now()}`, { 
+        fetch(`/dashboard-api/stats?t=${Date.now()}`, { 
             headers: headers,
             cache: 'no-store'
         })
@@ -860,7 +860,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 e.stopPropagation();
                                 const id = this.dataset.id;
                                 const action = this.dataset.action;
-                                const endpoint = action === 'stop' ? `/api/assignments/${id}` : `/api/assignments/${id}/control`;
+                                const endpoint = action === 'stop' ? `/dashboard-api/assignments/${id}` : `/dashboard-api/assignments/${id}/control`;
                                 const method = action === 'stop' ? 'DELETE' : 'POST';
                                 const body = action === 'stop' ? undefined : JSON.stringify({ action: action });
                                 this.disabled = true;

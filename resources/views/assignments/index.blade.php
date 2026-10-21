@@ -409,7 +409,7 @@
                             timer.classList.add('bg-amber-50', 'text-amber-600');
 
                             // Fetch next track API
-                            fetch(`/api/assignments/${assignmentId}/next`, {
+                            fetch(`/dashboard-api/assignments/${assignmentId}/next`, {
                                     method: 'POST',
                                     headers: {
                                         'Content-Type': 'application/json',

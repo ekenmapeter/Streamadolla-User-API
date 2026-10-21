@@ -10,6 +10,9 @@ use App\Http\Controllers\AdminCommandCenterController;
 use App\Http\Controllers\AdminRewardController;
 use App\Http\Controllers\AdminTrackController;
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\Api\AssignmentController as FleetAssignmentController;
+use App\Http\Controllers\Api\DeviceController as FleetDeviceController;
+use App\Http\Controllers\CampaignController;
 
 // Public landing page for Streamadollar
 Route::get('/', [LandingController::class, 'index'])->name('landing');
@@ -58,6 +61,28 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/device-assignments/bulk-delete', [DeviceAssignmentController::class, 'bulkDelete'])->name('assignments.bulk-delete');
     Route::post('/device-assignments/run-worker', [DeviceAssignmentController::class, 'runWorker'])->name('assignments.worker');
     Route::post('/device-assignments/{assignment}/delete', [DeviceAssignmentController::class, 'destroySingle'])->name('assignments.destroy');
+
+    // ── Fleet dashboard browser endpoints (session + CSRF protected) ──────
+    // The /api/* fleet routes are machine-only (X-API-Key), so the admin UI
+    // must not call them directly from the browser.
+    Route::prefix('dashboard-api')->name('dashboard.api.')->group(function () {
+        Route::get('/stats', [DashboardController::class, 'stats'])->name('stats');
+
+        Route::post('/assignments', [FleetAssignmentController::class, 'store'])->name('assignments.store');
+        Route::delete('/assignments/{assignment}', [FleetAssignmentController::class, 'destroy'])->name('assignments.destroy');
+        Route::post('/assignments/{assignment}/control', [FleetAssignmentController::class, 'control'])->name('assignments.control');
+        Route::post('/assignments/{assignment}/next', [FleetAssignmentController::class, 'nextTrack'])->name('assignments.next');
+
+        Route::post('/devices/register', [FleetDeviceController::class, 'register'])->name('devices.register');
+        Route::put('/devices/{device}', [FleetDeviceController::class, 'update'])->name('devices.update');
+        Route::delete('/devices/{device}', [FleetDeviceController::class, 'destroy'])->name('devices.destroy');
+
+        Route::post('/campaigns', [CampaignController::class, 'store'])->name('campaigns.store');
+        Route::post('/campaigns/bulk-delete', [CampaignController::class, 'bulkDestroy'])->name('campaigns.bulk-delete');
+        Route::put('/campaigns/{campaign}', [CampaignController::class, 'update'])->name('campaigns.update');
+        Route::delete('/campaigns/{campaign}', [CampaignController::class, 'destroy'])->name('campaigns.destroy');
+        Route::post('/campaigns/{campaign}/deploy', [CampaignController::class, 'deploy'])->name('campaigns.deploy');
+    });
 
     // ── AudioReach Command Center (admin) ──
     Route::get('/admin', [AdminCommandCenterController::class, 'index'])->name('admin.center');
