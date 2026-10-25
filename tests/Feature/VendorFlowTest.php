@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Jobs\VendorRewardJob;
+use App\Models\Campaign;
 use App\Models\Device;
 use App\Models\DeviceAssignment;
 use App\Models\DeviceSession;
@@ -309,6 +310,37 @@ class VendorFlowTest extends TestCase
         ])->assertStatus(422);
 
         $this->assertDatabaseMissing('stream_plays', ['device_assignment_id' => $assignment->id]);
+    }
+
+    public function test_campaign_assignment_stays_playing_after_vendor_session_completes(): void
+    {
+        $this->seedBase();
+        $vendor = $this->registerVendor('campaign-vendor@example.com');
+        $this->vendorToken = $this->vendorToken($vendor);
+        $device = $this->registerVendorDevice($vendor, 'fp-campaign-vendor', 'fcm-campaign-vendor');
+
+        $campaign = Campaign::create([
+            'name' => 'Vendor Campaign',
+            'platform' => 'spotify',
+            'is_active' => true,
+        ]);
+
+        $assignment = DeviceAssignment::create([
+            'device_id' => $device->id,
+            'campaign_id' => $campaign->id,
+            'platform' => 'spotify',
+            'media_url' => 'https://open.spotify.com/track/example',
+            'status' => 'playing',
+            'assigned_at' => now(),
+            'started_at' => now(),
+        ]);
+
+        $this->playOutSession($device, $assignment);
+
+        // The vendor session is rewarded, but the campaign assignment must
+        // remain active so the worker can advance to the next track.
+        $this->assertSame('playing', $assignment->fresh()->status);
+        $this->assertDatabaseHas('stream_plays', ['device_assignment_id' => $assignment->id]);
     }
 
     public function test_low_checkpoints_and_too_fast_completion_flagged_fraud(): void

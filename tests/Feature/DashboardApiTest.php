@@ -2,6 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Campaign;
+use App\Models\Device;
+use App\Models\DeviceAssignment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -52,5 +55,39 @@ class DashboardApiTest extends TestCase
             ->assertJson(['success' => true]);
 
         $this->assertDatabaseHas('campaigns', ['name' => 'Dashboard Campaign']);
+    }
+
+    public function test_stale_device_is_marked_offline_without_stopping_its_campaign(): void
+    {
+        $device = Device::create([
+            'device_id' => 'stale-device-1',
+            'name' => 'Stale Phone',
+            'fcm_token' => 'fcm-stale-1',
+            'status' => 'streaming',
+            'last_seen' => now()->subHour(),
+        ]);
+
+        $campaign = Campaign::create([
+            'name' => 'Stale Campaign',
+            'platform' => 'spotify',
+            'is_active' => true,
+        ]);
+
+        $assignment = DeviceAssignment::create([
+            'device_id' => $device->id,
+            'campaign_id' => $campaign->id,
+            'platform' => 'spotify',
+            'media_url' => 'https://open.spotify.com/track/example',
+            'status' => 'playing',
+            'assigned_at' => now(),
+            'started_at' => now(),
+        ]);
+
+        $this->actingAs($this->admin())
+            ->getJson('/dashboard-api/stats')
+            ->assertOk();
+
+        $this->assertSame('offline', $device->fresh()->status);
+        $this->assertSame('playing', $assignment->fresh()->status);
     }
 }

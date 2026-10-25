@@ -266,6 +266,7 @@ class CampaignController extends Controller
                         'youtube_url'     => $firstTrack->media_url,
                         'apple_music_url' => $firstTrack->media_url,
                         'media_url'       => $firstTrack->media_url,
+                        'duration_seconds' => (string) ($firstTrack->duration_seconds ?? 180),
                         'proxy_url'       => (string)($device->proxy_url ?? ''),
                         'action'          => 'play',
                         'platform'        => $campaign->platform,

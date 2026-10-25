@@ -174,13 +174,13 @@ class DashboardController extends Controller
                               ->get();
         
         if ($staleDevices->count() > 0) {
-            $staleDeviceIds = $staleDevices->pluck('id');
-            // Mark devices offline
-            Device::whereIn('id', $staleDeviceIds)->update(['status' => 'offline']);
-            // Stop any active assignments for these devices
-            DeviceAssignment::whereIn('device_id', $staleDeviceIds)
-                            ->whereIn('status', ['pending', 'playing', 'paused'])
-                            ->update(['status' => 'stopped']);
+            // Mark devices offline, but never stop their active assignments.
+            // A missed heartbeat (app backgrounded/killed, temporary network
+            // loss) must not kill a running campaign. The campaign worker will
+            // keep advancing the assignment and the device can resume on its
+            // next heartbeat; admins can still stop it manually if needed.
+            Device::whereIn('id', $staleDevices->pluck('id'))
+                ->update(['status' => 'offline']);
         }
     }
 

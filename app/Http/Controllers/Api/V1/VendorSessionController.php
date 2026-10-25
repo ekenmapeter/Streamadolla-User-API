@@ -121,6 +121,7 @@ class VendorSessionController extends Controller
     public function complete(Request $request, DeviceAssignment $assignment, FraudEngine $fraud)
     {
         $user = $request->user();
+        $device = $assignment->device;
         $session = $this->openSessionFor($user, $assignment);
 
         if (! $session) {
@@ -151,7 +152,14 @@ class VendorSessionController extends Controller
             'completed_at' => now(),
         ]);
 
-        $assignment->update(['status' => 'completed']);
+        // Completing a vendor stream is a reward milestone, not the end of a
+        // campaign. Keep campaign assignments playing so the campaign worker
+        // can advance to the next track; only non-campaign (track-farm)
+        // assignments are marked completed here.
+        $assignment->update([
+            'status' => $assignment->campaign_id ? 'playing' : 'completed',
+        ]);
+        $device->update(['last_seen' => now()]);
 
         $sessionFlags = $fraud->deviceSessionRisk($session->fresh());
 
