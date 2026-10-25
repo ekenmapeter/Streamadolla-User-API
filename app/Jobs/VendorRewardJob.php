@@ -15,8 +15,9 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * Mirrors RentalRewardJob for vendor-owned devices. Pays the vendor's
- * wallet once per completed, gate-passing vendor stream. Never credits the
- * same assignment twice.
+ * wallet once per completed, gate-passing vendor session. Campaign
+ * assignments span many tracks, so each session is paid separately while
+ * duplicate job runs for the same session are ignored.
  */
 class VendorRewardJob implements ShouldQueue
 {
@@ -41,7 +42,13 @@ class VendorRewardJob implements ShouldQueue
             return;
         }
 
-        if (StreamPlay::existsForAssignment($session->device_assignment_id)) {
+        if (StreamPlay::where('device_session_id', $session->id)->exists()) {
+            return;
+        }
+
+        // Legacy non-campaign (track-farm) assignments represent one track,
+        // so keep the one-reward-per-assignment guard for those.
+        if (! $session->assignment?->campaign_id && StreamPlay::existsForAssignment($session->device_assignment_id)) {
             return;
         }
 
@@ -64,9 +71,11 @@ class VendorRewardJob implements ShouldQueue
                 'user_id' => $user->id,
                 'rental_id' => null,
                 'device_assignment_id' => $session->device_assignment_id,
+                'device_session_id' => $session->id,
                 'track_id' => $assignment?->track_id,
                 'platform' => $assignment?->platform,
                 'media_url' => $assignment?->media_url,
+                'media_title' => $assignment?->media_title,
                 'reward_amount' => $reward,
                 'status' => StreamPlay::STATUS_REWARDED,
             ]);

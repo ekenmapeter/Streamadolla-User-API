@@ -343,6 +343,45 @@ class VendorFlowTest extends TestCase
         $this->assertDatabaseHas('stream_plays', ['device_assignment_id' => $assignment->id]);
     }
 
+    public function test_each_campaign_track_session_earns_a_separate_reward(): void
+    {
+        $this->seedBase();
+        $vendor = $this->registerVendor('multi-track-vendor@example.com');
+        $this->vendorToken = $this->vendorToken($vendor);
+        $device = $this->registerVendorDevice($vendor, 'fp-multi-track', 'fcm-multi-track');
+
+        $campaign = Campaign::create([
+            'name' => 'Looping Campaign',
+            'platform' => 'spotify',
+            'is_active' => true,
+        ]);
+
+        $assignment = DeviceAssignment::create([
+            'device_id' => $device->id,
+            'campaign_id' => $campaign->id,
+            'platform' => 'spotify',
+            'media_url' => 'https://open.spotify.com/track/first',
+            'media_title' => 'First Track',
+            'status' => 'playing',
+            'assigned_at' => now(),
+            'started_at' => now(),
+        ]);
+
+        $this->playOutSession($device, $assignment);
+
+        // Simulate the campaign worker advancing to the next track.
+        $assignment->update([
+            'media_url' => 'https://open.spotify.com/track/second',
+            'media_title' => 'Second Track',
+            'started_at' => now(),
+        ]);
+
+        $this->playOutSession($device, $assignment);
+
+        $this->assertSame(2, StreamPlay::where('device_assignment_id', $assignment->id)->count());
+        $this->assertSame(10, (new WalletService())->balance($vendor->fresh()));
+    }
+
     public function test_low_checkpoints_and_too_fast_completion_flagged_fraud(): void
     {
         $this->seedBase();

@@ -19,9 +19,11 @@ class StreamPlay extends Model
         'user_id',
         'rental_id',
         'device_assignment_id',
+        'device_session_id',
         'track_id',
         'platform',
         'media_url',
+        'media_title',
         'reward_amount',
         'status',
     ];

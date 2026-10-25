@@ -78,7 +78,7 @@ class VendorController extends Controller
                 'reward_amount' => (int) $play->reward_amount,
                 'platform' => $play->platform,
                 'media_url' => $play->media_url,
-                'media_title' => $play->assignment?->media_title ?? $play->track?->title,
+                'media_title' => $play->media_title ?? $play->assignment?->media_title ?? $play->track?->title,
                 'device_name' => $play->assignment?->device?->name,
                 'created_at' => $play->created_at?->toIso8601String(),
             ]);
