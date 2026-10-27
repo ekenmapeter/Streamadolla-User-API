@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Console\Commands\ExecuteCampaigns;
 use App\Jobs\VendorRewardJob;
 use App\Models\Campaign;
 use App\Models\Device;
@@ -380,6 +381,51 @@ class VendorFlowTest extends TestCase
 
         $this->assertSame(2, StreamPlay::where('device_assignment_id', $assignment->id)->count());
         $this->assertSame(10, (new WalletService())->balance($vendor->fresh()));
+    }
+
+    public function test_track_advance_rewards_an_open_vendor_session_without_checkpoints(): void
+    {
+        $this->seedBase();
+        $vendor = $this->registerVendor('fallback-vendor@example.com');
+        $this->vendorToken = $this->vendorToken($vendor);
+        $device = $this->registerVendorDevice($vendor, 'fp-fallback', 'fcm-fallback');
+
+        $campaign = Campaign::create([
+            'name' => 'Fallback Campaign',
+            'platform' => 'spotify',
+            'is_active' => true,
+        ]);
+
+        $assignment = DeviceAssignment::create([
+            'device_id' => $device->id,
+            'campaign_id' => $campaign->id,
+            'platform' => 'spotify',
+            'media_url' => 'https://open.spotify.com/track/fallback',
+            'media_title' => 'Fallback Track',
+            'status' => 'playing',
+            'assigned_at' => now(),
+            'started_at' => now()->subSeconds(70),
+        ]);
+
+        $session = DeviceSession::create([
+            'vendor_id' => $vendor->id,
+            'device_id' => $device->id,
+            'device_assignment_id' => $assignment->id,
+            'min_duration_seconds' => 30,
+            'elapsed_seconds' => 0,
+            'checkpoints' => [],
+            'status' => DeviceSession::STATUS_OPEN,
+            'started_at' => now()->subSeconds(60),
+        ]);
+
+        $command = app(ExecuteCampaigns::class);
+        $method = new \ReflectionMethod($command, 'completeOpenVendorSessions');
+        $method->setAccessible(true);
+        $method->invoke($command, $assignment, $device);
+
+        $this->assertSame('rewarded', $session->fresh()->status);
+        $this->assertDatabaseHas('stream_plays', ['device_session_id' => $session->id]);
+        $this->assertSame(5, (new WalletService())->balance($vendor->fresh()));
     }
 
     public function test_low_checkpoints_and_too_fast_completion_flagged_fraud(): void

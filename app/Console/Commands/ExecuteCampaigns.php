@@ -5,9 +5,12 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Models\AppSetting;
 use App\Models\DeviceAssignment;
+use App\Models\DeviceSession;
 use App\Models\CampaignTrack;
 use App\Models\DeviceLog;
+use App\Services\FraudEngine;
 use Illuminate\Support\Str;
 use Kreait\Firebase\Messaging\CloudMessage;
 use Kreait\Firebase\Factory;
@@ -132,6 +135,12 @@ class ExecuteCampaigns extends Command
                 DB::rollBack();
                 return false;
             }
+
+            // The vendor app can be backgrounded or killed while Spotify is
+            // playing, leaving its session open at 0 checkpoints. Close any
+            // such session for the track that is finishing so the vendor is
+            // still credited for the stream.
+            $this->completeOpenVendorSessions($assignment, $device);
 
             // ── Determine next action ───────────────────────────────────
             $campaignMediaUrl = $campaign->interstitial_media_url;
@@ -314,6 +323,64 @@ class ExecuteCampaigns extends Command
             $this->error("  " . $errMsg);
             Log::error($errMsg);
             return false;
+        }
+    }
+
+    private function completeOpenVendorSessions(DeviceAssignment $assignment, $device): void
+    {
+        if (! $assignment->campaign_id || ! $device?->user?->isVendor()) {
+            return;
+        }
+
+        // Allow a small clock/hand-off tolerance: the vendor app can create
+        // its session just before the deploy request finishes writing
+        // started_at on the assignment.
+        $trackStartedAt = ($assignment->started_at ?? now()->subDay())->copy()->subSeconds(30);
+
+        $sessions = DeviceSession::where('device_assignment_id', $assignment->id)
+            ->where('status', DeviceSession::STATUS_OPEN)
+            ->whereNotNull('started_at')
+            ->where('started_at', '>=', $trackStartedAt)
+            ->get();
+
+        $fraud = app(FraudEngine::class);
+        $maxPerDay = (int) (AppSetting::get('vendor_max_streams_per_device_per_day', 50) ?? 50);
+
+        foreach ($sessions as $session) {
+            $elapsed = max(0, now()->timestamp - $session->started_at->timestamp);
+
+            if ($elapsed < $session->min_duration_seconds) {
+                continue;
+            }
+
+            if ($fraud->hitDeviceDailyLimit($device->id, $maxPerDay)) {
+                $session->update([
+                    'elapsed_seconds' => $elapsed,
+                    'status' => DeviceSession::STATUS_FRAUD,
+                    'completed_at' => now(),
+                ]);
+                continue;
+            }
+
+            $checkpoints = $session->checkpoints ?? [];
+            $checkpoints[] = [
+                'at' => now()->toIso8601String(),
+                'elapsed' => $elapsed,
+                'source' => 'server_fallback',
+            ];
+
+            $session->update([
+                'elapsed_seconds' => $elapsed,
+                'checkpoints' => $checkpoints,
+                'status' => DeviceSession::STATUS_REWARDED,
+                'completed_at' => now(),
+            ]);
+
+            $fraud->incrementDeviceDailyCount($device->id);
+
+            \App\Jobs\VendorRewardJob::dispatchSync($session->id);
+
+            Log::info("Asgn #{$assignment->id}: completed open vendor session #{$session->id} at {$elapsed}s.");
         }
     }
 

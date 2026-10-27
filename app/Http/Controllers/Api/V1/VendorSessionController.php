@@ -178,7 +178,9 @@ class VendorSessionController extends Controller
 
         $fraud->incrementDeviceDailyCount($session->device_id);
 
-        \App\Jobs\VendorRewardJob::dispatch($session->id);
+        // Credit immediately so a missing queue worker cannot leave vendor
+        // earnings invisible after a completed stream.
+        \App\Jobs\VendorRewardJob::dispatchSync($session->id);
 
         return response()->json([
             'success' => true,
