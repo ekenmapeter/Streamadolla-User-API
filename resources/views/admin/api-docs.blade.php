@@ -344,7 +344,7 @@
         </div>
         <div class="bg-gray-900 border border-white/10 rounded-2xl p-6">
             <h3 class="font-bold text-sm mb-3"><i class="fas fa-clock mr-2 text-blue-400"></i>Notes</h3>
-            <p class="text-sm text-gray-400 leading-relaxed">Timestamps are ISO-8601. Amounts are integers in Naira (₦). Listener daily session limit is enforced server-side (default 50/day). Rewards credit via the queue — allow a few seconds after <code class="text-gray-300">complete</code>.</p>
+            <p class="text-sm text-gray-400 leading-relaxed">Timestamps are ISO-8601. Listener amounts are whole Naira (₦); vendor amounts are USD with up to three decimals (e.g. $0.001 per stream). Listener daily session limit is enforced server-side (default 50/day). Rewards credit via the queue — allow a few seconds after <code class="text-gray-300">complete</code>.</p>
         </div>
     </div>
 @endsection

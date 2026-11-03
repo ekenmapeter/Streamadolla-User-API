@@ -275,14 +275,14 @@ class VendorFlowTest extends TestCase
 
         $this->assertSame('rewarded', DeviceSession::find($sessionId)->status);
         $this->assertSame(1, Device::find($device->id)->total_streams);
-        $this->assertSame(5, Device::find($device->id)->total_earned);
+        $this->assertEqualsWithDelta(0.001, Device::find($device->id)->total_earned, 0.0000001);
         $this->assertSame(1, $track->fresh()->streams_served);
 
         $play = StreamPlay::where('device_assignment_id', $assignment->id)->first();
         $this->assertNotNull($play);
-        $this->assertSame(5, (int) $play->reward_amount);
+        $this->assertEqualsWithDelta(0.001, $play->reward_amount, 0.0000001);
 
-        $this->assertSame(5, (new WalletService())->balance($vendor->fresh()));
+        $this->assertEqualsWithDelta(0.001, (new WalletService())->balance($vendor->fresh()), 0.0000001);
 
         // Earnings record shows the rewarded stream.
         $earnings = $this->getJson('/api/v1/vendor/earnings', [
@@ -290,7 +290,7 @@ class VendorFlowTest extends TestCase
         ])->assertOk()->json();
 
         $this->assertSame(1, $earnings['summary']['total_streams']);
-        $this->assertSame(5, $earnings['summary']['total_earned']);
+        $this->assertEqualsWithDelta(0.001, $earnings['summary']['total_earned'], 0.0000001);
         $this->assertSame('Vendor Single', $earnings['streams'][0]['media_title']);
     }
 
@@ -380,7 +380,7 @@ class VendorFlowTest extends TestCase
         $this->playOutSession($device, $assignment);
 
         $this->assertSame(2, StreamPlay::where('device_assignment_id', $assignment->id)->count());
-        $this->assertSame(10, (new WalletService())->balance($vendor->fresh()));
+        $this->assertEqualsWithDelta(0.002, (new WalletService())->balance($vendor->fresh()), 0.0000001);
     }
 
     public function test_track_advance_rewards_an_open_vendor_session_without_checkpoints(): void
@@ -425,7 +425,7 @@ class VendorFlowTest extends TestCase
 
         $this->assertSame('rewarded', $session->fresh()->status);
         $this->assertDatabaseHas('stream_plays', ['device_session_id' => $session->id]);
-        $this->assertSame(5, (new WalletService())->balance($vendor->fresh()));
+        $this->assertEqualsWithDelta(0.001, (new WalletService())->balance($vendor->fresh()), 0.0000001);
     }
 
     public function test_low_checkpoints_and_too_fast_completion_flagged_fraud(): void
@@ -517,7 +517,7 @@ class VendorFlowTest extends TestCase
         (new VendorRewardJob($sessionId))->handle(app(WalletService::class));
 
         $this->assertSame(1, StreamPlay::where('device_assignment_id', $assignment->id)->count());
-        $this->assertSame(5, (new WalletService())->balance($vendor->fresh()));
+        $this->assertEqualsWithDelta(0.001, (new WalletService())->balance($vendor->fresh()), 0.0000001);
     }
 
     public function test_stop_control_abandons_session_without_reward(): void
@@ -582,6 +582,44 @@ class VendorFlowTest extends TestCase
         ])->assertOk();
 
         $this->assertSame('Renamed Vendor', $vendor->fresh()->name);
+    }
+
+    public function test_vendor_wallet_and_payout_are_denominated_in_usd(): void
+    {
+        $this->seedBase();
+        $vendor = $this->registerVendor();
+        $this->vendorToken = $this->vendorToken($vendor);
+
+        app(WalletService::class)->credit($vendor, 2.00, WalletTransaction::TYPE_VENDOR);
+
+        $this->getJson('/api/v1/wallet', [
+            'Authorization' => 'Bearer ' . $this->vendorToken,
+        ])->assertOk()
+            ->assertJsonPath('currency', 'USD')
+            ->assertJsonPath('balance', 2)
+            ->assertJsonPath('min_payout', 1);
+
+        $response = $this->postJson('/api/v1/wallet/payout-request', [
+            'amount' => 1.25,
+            'method' => 'bank',
+            'account' => [
+                'bank_code' => '044',
+                'account_number' => '0123456789',
+                'account_name' => 'Grace Vendor',
+            ],
+        ], ['Authorization' => 'Bearer ' . $this->vendorToken])
+            ->assertCreated()
+            ->assertJsonPath('payout.currency', 'USD')
+            ->assertJsonPath('payout.amount', 1.25);
+
+        $this->assertDatabaseHas('payout_requests', [
+            'id' => $response->json('payout.id'),
+            'user_id' => $vendor->id,
+            'currency' => 'USD',
+            'amount' => 1.25,
+        ]);
+
+        $this->assertEqualsWithDelta(0.75, app(WalletService::class)->balance($vendor->fresh()), 0.0000001);
     }
 
     public function test_admin_vendor_pages_render(): void

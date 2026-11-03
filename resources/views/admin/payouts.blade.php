@@ -1,14 +1,14 @@
 @extends('admin.layout')
 
 @section('header', 'Payouts')
-@section('subtitle', 'Listener payout reconciliation')
+@section('subtitle', 'Listener & vendor payout reconciliation')
 
 @section('content')
     <div class="bg-gray-900 border border-white/10 rounded-2xl overflow-hidden">
         <table class="w-full text-sm">
             <thead>
                 <tr class="border-b border-white/10 text-gray-400 text-left">
-                    <th class="px-6 py-4 font-semibold">Listener</th>
+                    <th class="px-6 py-4 font-semibold">Account</th>
                     <th class="px-6 py-4 font-semibold">Amount</th>
                     <th class="px-6 py-4 font-semibold">Method</th>
                     <th class="px-6 py-4 font-semibold">Status</th>
@@ -22,7 +22,7 @@
                         <td class="px-6 py-4">
                             <p class="font-semibold">
                                 @if ($payout->user)
-                                    <a href="{{ route('admin.listeners.detail', $payout->user) }}" class="hover:text-purple-400 transition">{{ $payout->user->name }}</a>
+                                    <a href="{{ $payout->user->isVendor() ? route('admin.vendors.detail', $payout->user) : route('admin.listeners.detail', $payout->user) }}" class="hover:text-purple-400 transition">{{ $payout->user->name }}</a>
                                 @else
                                     —
                                 @endif
@@ -36,7 +36,7 @@
                                 @endif
                             </p>
                         </td>
-                        <td class="px-6 py-4 font-bold">₦{{ number_format($payout->amount) }}</td>
+                        <td class="px-6 py-4 font-bold">{{ \App\Support\Money::format($payout->amount, $payout->currency ?? \App\Support\Money::NGN) }}</td>
                         <td class="px-6 py-4 capitalize">{{ $payout->method }}</td>
                         <td class="px-6 py-4">
                             @if ($payout->destination && $payout->method === 'bank')

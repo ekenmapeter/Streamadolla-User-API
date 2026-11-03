@@ -26,7 +26,7 @@ class Device extends Model
         'metadata' => 'array',
         'last_seen' => 'datetime',
         'total_streams' => 'integer',
-        'total_earned' => 'integer',
+        'total_earned' => 'float',
     ];
 
     // ── Relationships ────────────────────────────────────────────────────

@@ -18,6 +18,7 @@ use App\Models\PayoutRequest;
 use App\Models\WalletTransaction;
 use App\Services\FirebaseMessagingService;
 use App\Services\WalletService;
+use App\Support\Money;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -35,18 +36,24 @@ class AdminCommandCenterController extends Controller
             'payouts_pending' => PayoutRequest::pending()->count(),
             'fcm_devices' => UserDevice::whereNotNull('fcm_token')->where('last_seen_at', '>=', now()->subDay())->count(),
             'active_rentals' => DeviceRental::active()->count(),
-            'rental_streams_today' => StreamPlay::where('status', StreamPlay::STATUS_REWARDED)->whereDate('created_at', today())->count(),
-            'rental_paid_today' => (int) StreamPlay::where('status', StreamPlay::STATUS_REWARDED)->whereDate('created_at', today())->sum('reward_amount'),
+            'rental_streams_today' => StreamPlay::where('status', StreamPlay::STATUS_REWARDED)
+                ->whereNotNull('rental_id')
+                ->whereDate('created_at', today())
+                ->count(),
+            'rental_paid_today' => Money::number(StreamPlay::where('status', StreamPlay::STATUS_REWARDED)
+                ->whereNotNull('rental_id')
+                ->whereDate('created_at', today())
+                ->sum('reward_amount')),
             'tracks_pending' => Track::where('status', Track::STATUS_PENDING_APPROVAL)->count(),
             'vendors' => User::where('role', User::ROLE_VENDOR)->count(),
             'vendor_streams_today' => StreamPlay::where('status', StreamPlay::STATUS_REWARDED)
                 ->whereDate('created_at', today())
                 ->whereHas('user', fn ($q) => $q->where('role', User::ROLE_VENDOR))
                 ->count(),
-            'vendor_paid_today' => (int) StreamPlay::where('status', StreamPlay::STATUS_REWARDED)
+            'vendor_paid_today' => Money::number(StreamPlay::where('status', StreamPlay::STATUS_REWARDED)
                 ->whereDate('created_at', today())
                 ->whereHas('user', fn ($q) => $q->where('role', User::ROLE_VENDOR))
-                ->sum('reward_amount'),
+                ->sum('reward_amount')),
         ];
 
         $recentSessions = ListenSession::with(['assignment.campaign:id,title', 'listener:id,name'])
@@ -202,6 +209,8 @@ class AdminCommandCenterController extends Controller
         $rewardCredits = fn ($q) => $q->whereIn('type', [WalletTransaction::TYPE_REWARD, WalletTransaction::TYPE_BONUS, WalletTransaction::TYPE_RENTAL])->where('status', WalletTransaction::STATUS_CREDITED);
         $payoutDebits = fn ($q) => $q->where('type', WalletTransaction::TYPE_PAYOUT)->where('status', WalletTransaction::STATUS_CREDITED);
 
+        $listenerTransactions = fn ($q) => $q->whereHas('user', fn ($uq) => $uq->where('role', User::ROLE_LISTENER));
+
         $metrics = [
             'total' => User::where('role', User::ROLE_LISTENER)->count(),
             'verified' => User::where('role', User::ROLE_LISTENER)->whereNotNull('email_verified_at')->count(),
@@ -209,14 +218,14 @@ class AdminCommandCenterController extends Controller
             'active_week' => ListenSession::where('completed_at', '>=', now()->subDays(7))->distinct('listener_id')->count('listener_id'),
             'rewarded_sessions' => ListenSession::where('status', ListenSession::STATUS_REWARDED)->count(),
             'fraud_sessions' => ListenSession::where('status', ListenSession::STATUS_FRAUD)->count(),
-            'pending_payouts' => PayoutRequest::pending()->count(),
-            'total_earned' => (int) WalletTransaction::whereIn('type', [WalletTransaction::TYPE_REWARD, WalletTransaction::TYPE_BONUS, WalletTransaction::TYPE_RENTAL])->where('status', WalletTransaction::STATUS_CREDITED)->sum('amount'),
-            'total_paid_out' => (int) WalletTransaction::where('type', WalletTransaction::TYPE_PAYOUT)->where('status', WalletTransaction::STATUS_CREDITED)->sum('amount'),
+            'pending_payouts' => PayoutRequest::pending()->whereHas('user', fn ($q) => $q->where('role', User::ROLE_LISTENER))->count(),
+            'total_earned' => (int) $listenerTransactions(WalletTransaction::query())->whereIn('type', [WalletTransaction::TYPE_REWARD, WalletTransaction::TYPE_BONUS, WalletTransaction::TYPE_RENTAL])->where('status', WalletTransaction::STATUS_CREDITED)->sum('amount'),
+            'total_paid_out' => (int) $listenerTransactions(WalletTransaction::query())->where('type', WalletTransaction::TYPE_PAYOUT)->where('status', WalletTransaction::STATUS_CREDITED)->sum('amount'),
             'avg_trust' => round((float) ListenerProfile::avg('trust_level'), 2),
             'avg_streak' => round((float) ListenerProfile::avg('streak'), 1),
             'fcm_devices' => UserDevice::whereNotNull('fcm_token')->where('last_seen_at', '>=', now()->subDay())->count(),
-            'total_balance' => (int) WalletTransaction::whereIn('type', [WalletTransaction::TYPE_REWARD, WalletTransaction::TYPE_BONUS, WalletTransaction::TYPE_RENTAL])->where('status', WalletTransaction::STATUS_CREDITED)->sum('amount')
-                - (int) WalletTransaction::where('type', WalletTransaction::TYPE_PAYOUT)->where('status', WalletTransaction::STATUS_CREDITED)->sum('amount'),
+            'total_balance' => (int) $listenerTransactions(WalletTransaction::query())->whereIn('type', [WalletTransaction::TYPE_REWARD, WalletTransaction::TYPE_BONUS, WalletTransaction::TYPE_RENTAL])->where('status', WalletTransaction::STATUS_CREDITED)->sum('amount')
+                - (int) $listenerTransactions(WalletTransaction::query())->where('type', WalletTransaction::TYPE_PAYOUT)->where('status', WalletTransaction::STATUS_CREDITED)->sum('amount'),
         ];
 
         // Trust-level distribution
@@ -277,14 +286,14 @@ class AdminCommandCenterController extends Controller
             ->withCount(['streamPlays as rewarded_streams_count' => fn ($q) => $q->where('status', StreamPlay::STATUS_REWARDED)])
             ->withCount(['streamPlays as streams_today_count' => fn ($q) => $q->where('status', StreamPlay::STATUS_REWARDED)->whereDate('created_at', today())])
             ->withCount(['deviceSessions as fraud_sessions_count' => fn ($q) => $q->where('status', DeviceSession::STATUS_FRAUD)])
-            ->withSum(['walletTransactions as total_earned' => fn ($q) => $q->whereIn('type', [WalletTransaction::TYPE_VENDOR, WalletTransaction::TYPE_RENTAL])->where('status', WalletTransaction::STATUS_CREDITED)], 'amount')
+            ->withSum(['walletTransactions as total_earned' => fn ($q) => $q->where('type', WalletTransaction::TYPE_VENDOR)->where('status', WalletTransaction::STATUS_CREDITED)], 'amount')
             ->withMax('devices as last_seen_at', 'last_seen')
             ->paginate(15)
             ->withQueryString();
 
         $vendorCredits = fn ($q) => $q
             ->whereHas('user', fn ($uq) => $uq->where('role', User::ROLE_VENDOR))
-            ->whereIn('type', [WalletTransaction::TYPE_VENDOR, WalletTransaction::TYPE_RENTAL])
+            ->where('type', WalletTransaction::TYPE_VENDOR)
             ->where('status', WalletTransaction::STATUS_CREDITED);
 
         $metrics = [
@@ -299,14 +308,14 @@ class AdminCommandCenterController extends Controller
                 ->whereDate('created_at', today())
                 ->whereHas('user', fn ($q) => $q->where('role', User::ROLE_VENDOR))
                 ->count(),
-            'total_earned' => (int) $vendorCredits(WalletTransaction::query())->sum('amount'),
+            'total_earned' => Money::number($vendorCredits(WalletTransaction::query())->sum('amount')),
             'fraud_sessions' => DeviceSession::where('status', DeviceSession::STATUS_FRAUD)->count(),
             'pending_payouts' => PayoutRequest::whereHas('user', fn ($q) => $q->where('role', User::ROLE_VENDOR))->pending()->count(),
         ];
 
         $topEarners = User::where('role', User::ROLE_VENDOR)
             ->withCount('devices')
-            ->withSum(['walletTransactions as earned' => fn ($q) => $q->whereIn('type', [WalletTransaction::TYPE_VENDOR, WalletTransaction::TYPE_RENTAL])->where('status', WalletTransaction::STATUS_CREDITED)], 'amount')
+            ->withSum(['walletTransactions as earned' => fn ($q) => $q->where('type', WalletTransaction::TYPE_VENDOR)->where('status', WalletTransaction::STATUS_CREDITED)], 'amount')
             ->orderByDesc('earned')
             ->limit(5)
             ->get();
@@ -352,17 +361,18 @@ class AdminCommandCenterController extends Controller
 
         $stats = [
             'total_streams' => $user->streamPlays()->where('status', StreamPlay::STATUS_REWARDED)->count(),
-            'total_earned' => (int) $user->walletTransactions()
-                ->whereIn('type', [WalletTransaction::TYPE_VENDOR, WalletTransaction::TYPE_RENTAL])
+            'total_earned' => Money::number($user->walletTransactions()
+                ->where('type', WalletTransaction::TYPE_VENDOR)
                 ->where('status', WalletTransaction::STATUS_CREDITED)
-                ->sum('amount'),
-            'total_paid_out' => (int) $user->walletTransactions()
+                ->sum('amount')),
+            'total_paid_out' => Money::number($user->walletTransactions()
                 ->where('type', WalletTransaction::TYPE_PAYOUT)
+                ->where('currency', Money::USD)
                 ->where('status', WalletTransaction::STATUS_CREDITED)
-                ->sum('amount'),
+                ->sum('amount')),
             'fraud_sessions' => (int) $user->deviceSessions()->where('status', DeviceSession::STATUS_FRAUD)->count(),
             'open_sessions' => (int) $user->deviceSessions()->where('status', DeviceSession::STATUS_OPEN)->count(),
-            'balance' => (int) app(\App\Services\WalletService::class)->balance($user),
+            'balance' => Money::number(app(\App\Services\WalletService::class)->balance($user)),
         ];
 
         $transactions = $user->walletTransactions()->orderByDesc('created_at')->limit(20)->get();
@@ -462,7 +472,7 @@ class AdminCommandCenterController extends Controller
 
         (new \App\Services\WalletService())->credit(
             $payout->user,
-            (int) $payout->amount,
+            $payout->amount,
             \App\Models\WalletTransaction::TYPE_BONUS,
             ['payout_request_id' => $payout->id, 'note' => 'Payout rejected — refunded']
         );
@@ -481,7 +491,9 @@ class AdminCommandCenterController extends Controller
             ['min_payout', 'Min payout (₦)', '1000'],
             ['payout_hold_hours', 'Payout hold (hours)', '72'],
             ['daily_review_limit', 'Max sessions / day', '50'],
-            ['vendor_rate_per_stream', 'Vendor reward per stream (₦)', '5'],
+            ['vendor_rate_per_stream', 'Vendor reward per stream ($)', '0.001'],
+            ['vendor_min_payout', 'Vendor minimum payout ($)', '1.00'],
+            ['usd_ngn_rate', 'USD → NGN rate (vendor payouts)', '1344.50'],
             ['vendor_min_seconds', 'Vendor min stream (seconds)', '30'],
             ['vendor_max_streams_per_device_per_day', 'Vendor max streams / device / day', '50'],
         ];
@@ -504,10 +516,15 @@ class AdminCommandCenterController extends Controller
         }
 
         foreach ($request->input('settings', []) as $row) {
+            $raw = $row['value'] ?? null;
+            $value = is_numeric($raw)
+                ? (str_contains((string) $raw, '.') ? (float) $raw : (int) $raw)
+                : $raw;
+
             AppSetting::updateOrCreate(
                 ['key' => $row['key']],
                 [
-                    'value' => is_numeric($row['value'] ?? null) ? (int) $row['value'] : ($row['value'] ?? null),
+                    'value' => $value,
                     'group' => $row['group'] ?? 'general',
                     'description' => $row['description'] ?? null,
                 ]

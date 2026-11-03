@@ -5,37 +5,51 @@ namespace App\Services;
 use App\Models\AppSetting;
 use App\Models\User;
 use App\Models\WalletTransaction;
+use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 
 class WalletService
 {
-    public function balance(User $user): int
+    public function currencyFor(User $user): string
     {
+        return $user->isVendor() ? Money::USD : Money::NGN;
+    }
+
+    public function balance(User $user): int|float
+    {
+        $currency = $this->currencyFor($user);
+
         $credited = WalletTransaction::where('user_id', $user->id)
+            ->where('currency', $currency)
             ->where('status', WalletTransaction::STATUS_CREDITED)
             ->whereIn('type', [WalletTransaction::TYPE_REWARD, WalletTransaction::TYPE_BONUS, WalletTransaction::TYPE_RENTAL, WalletTransaction::TYPE_VENDOR])
             ->sum('amount');
 
         $paidOut = WalletTransaction::where('user_id', $user->id)
+            ->where('currency', $currency)
             ->where('status', WalletTransaction::STATUS_CREDITED)
             ->where('type', WalletTransaction::TYPE_PAYOUT)
             ->sum('amount');
 
-        return (int) $credited - (int) $paidOut;
+        return Money::number((float) $credited - (float) $paidOut);
     }
 
-    public function credit(User $user, int $amount, string $type = WalletTransaction::TYPE_REWARD, array $meta = []): WalletTransaction
+    public function credit(User $user, int|float $amount, string $type = WalletTransaction::TYPE_REWARD, array $meta = []): WalletTransaction
     {
-        return DB::transaction(function () use ($user, $amount, $type, $meta) {
+        $amount = Money::round($amount);
+        $currency = $this->currencyFor($user);
+
+        return DB::transaction(function () use ($user, $amount, $currency, $type, $meta) {
             $before = $this->balance($user);
 
             $transaction = WalletTransaction::create([
                 'user_id' => $user->id,
                 'reference' => WalletTransaction::nextReference(),
                 'type' => $type,
+                'currency' => $currency,
                 'amount' => $amount,
                 'balance_before' => $before,
-                'balance_after' => $before + $amount,
+                'balance_after' => Money::round($before + $amount),
                 'status' => WalletTransaction::STATUS_CREDITED,
                 'meta' => $meta,
             ]);
@@ -44,18 +58,22 @@ class WalletService
         });
     }
 
-    public function debit(User $user, int $amount, array $meta = []): WalletTransaction
+    public function debit(User $user, int|float $amount, array $meta = []): WalletTransaction
     {
-        return DB::transaction(function () use ($user, $amount, $meta) {
+        $amount = Money::round($amount);
+        $currency = $this->currencyFor($user);
+
+        return DB::transaction(function () use ($user, $amount, $currency, $meta) {
             $before = $this->balance($user);
 
             $transaction = WalletTransaction::create([
                 'user_id' => $user->id,
                 'reference' => WalletTransaction::nextReference(),
                 'type' => WalletTransaction::TYPE_PAYOUT,
+                'currency' => $currency,
                 'amount' => $amount,
                 'balance_before' => $before,
-                'balance_after' => $before - $amount,
+                'balance_after' => Money::round($before - $amount),
                 'status' => WalletTransaction::STATUS_CREDITED,
                 'meta' => $meta,
             ]);
@@ -64,8 +82,12 @@ class WalletService
         });
     }
 
-    public function minPayout(): int
+    public function minPayout(?User $user = null): int|float
     {
-        return (int) (AppSetting::get('min_payout', 1000) ?? 1000);
+        if ($user?->isVendor()) {
+            return Money::number((float) (AppSetting::get('vendor_min_payout', 1.0) ?? 1.0));
+        }
+
+        return Money::number((float) (AppSetting::get('min_payout', 1000) ?? 1000));
     }
 }

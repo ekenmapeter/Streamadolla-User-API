@@ -137,7 +137,7 @@ class ListenerWalletFlowTest extends TestCase
             'account' => ['bank_code' => '044', 'account_number' => '0123456789', 'account_name' => 'Chidi'],
         ], $this->headersFor($token))
             ->assertStatus(422)
-            ->assertJson(['message' => 'Minimum payout is 1000.']);
+            ->assertJson(['message' => 'Minimum payout is ₦1,000.']);
 
         $this->assertDatabaseCount('payout_requests', 0);
     }

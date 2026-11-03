@@ -16,7 +16,7 @@
                     <div>
                         <label class="block text-sm font-semibold text-gray-300 mb-2">{{ $def[1] }}</label>
                         <input type="text" name="settings[{{ $key }}][key]" value="{{ $def[0] }}" class="hidden">
-                        <input type="number" name="settings[{{ $key }}][value]"
+                        <input type="number" step="any" min="0" name="settings[{{ $key }}][value]"
                             value="{{ $existing[$def[0]] ?? $def[2] }}"
                             class="w-full px-4 py-3 bg-white/5 border border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition-all text-white text-sm">
                     </div>

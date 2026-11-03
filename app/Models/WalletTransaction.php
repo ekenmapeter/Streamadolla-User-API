@@ -24,6 +24,7 @@ class WalletTransaction extends Model
         'user_id',
         'reference',
         'type',
+        'currency',
         'amount',
         'balance_before',
         'balance_after',
@@ -34,9 +35,9 @@ class WalletTransaction extends Model
     protected function casts(): array
     {
         return [
-            'amount' => 'integer',
-            'balance_before' => 'integer',
-            'balance_after' => 'integer',
+            'amount' => 'float',
+            'balance_before' => 'float',
+            'balance_after' => 'float',
             'meta' => 'array',
         ];
     }

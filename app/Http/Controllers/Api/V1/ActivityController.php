@@ -7,6 +7,7 @@ use App\Models\CountryReward;
 use App\Models\ListenSession;
 use App\Models\PayoutRequest;
 use App\Models\User;
+use App\Support\Money;
 use Illuminate\Http\Request;
 
 class ActivityController extends Controller
@@ -40,7 +41,8 @@ class ActivityController extends Controller
             ->get()
             ->map(fn (PayoutRequest $p) => [
                 'id' => $p->id,
-                'amount' => (int) $p->amount,
+                'amount' => Money::number($p->amount),
+                'currency' => $p->currency ?? Money::NGN,
                 'method' => $p->method,
                 'status' => $p->status,
                 'hold_until_at' => $p->hold_until_at?->toIso8601String(),

@@ -31,7 +31,7 @@ class StreamPlay extends Model
     protected function casts(): array
     {
         return [
-            'reward_amount' => 'integer',
+            'reward_amount' => 'float',
         ];
     }
 

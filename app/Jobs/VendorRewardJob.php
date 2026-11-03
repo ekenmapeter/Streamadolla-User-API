@@ -8,6 +8,7 @@ use App\Models\StreamPlay;
 use App\Models\Track;
 use App\Models\WalletTransaction;
 use App\Services\WalletService;
+use App\Support\Money;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
@@ -58,7 +59,7 @@ class VendorRewardJob implements ShouldQueue
             return;
         }
 
-        $reward = (int) (AppSetting::get('vendor_rate_per_stream', 5) ?? 5);
+        $reward = Money::round((float) (AppSetting::get('vendor_rate_per_stream', 0.001) ?? 0.001));
 
         if ($reward <= 0) {
             return;

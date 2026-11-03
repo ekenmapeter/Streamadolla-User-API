@@ -7,6 +7,7 @@ use App\Models\AppSetting;
 use App\Models\PayoutRequest;
 use App\Models\WalletTransaction;
 use App\Services\WalletService;
+use App\Support\Money;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -15,6 +16,7 @@ class WalletController extends Controller
     public function index(Request $request, WalletService $wallet)
     {
         $user = $request->user();
+        $currency = $wallet->currencyFor($user);
 
         $transactions = WalletTransaction::where('user_id', $user->id)
             ->orderByDesc('created_at')
@@ -23,7 +25,8 @@ class WalletController extends Controller
             ->map(fn (WalletTransaction $t) => [
                 'reference' => $t->reference,
                 'type' => $t->type,
-                'amount' => (int) $t->amount,
+                'currency' => $t->currency ?? $currency,
+                'amount' => Money::number($t->amount),
                 'status' => $t->status,
                 'meta' => $t->meta,
                 'created_at' => $t->created_at?->toIso8601String(),
@@ -31,8 +34,9 @@ class WalletController extends Controller
 
         return response()->json([
             'success' => true,
-            'balance' => $wallet->balance($user),
-            'min_payout' => $wallet->minPayout(),
+            'currency' => $currency,
+            'balance' => Money::number($wallet->balance($user)),
+            'min_payout' => Money::number($wallet->minPayout($user)),
             'transactions' => $transactions,
         ]);
     }
@@ -40,9 +44,11 @@ class WalletController extends Controller
     public function requestPayout(Request $request, WalletService $wallet)
     {
         $user = $request->user();
+        $currency = $wallet->currencyFor($user);
+        $isVendor = $user->isVendor();
 
         $validator = Validator::make($request->all(), [
-            'amount' => 'required|integer|min:1',
+            'amount' => $isVendor ? 'required|numeric|min:0.001' : 'required|integer|min:1',
             'method' => 'required|in:bank,airtime',
             'account' => 'required_if:method,bank|array',
             'account.bank_code' => 'required_if:method,bank|string',
@@ -56,8 +62,8 @@ class WalletController extends Controller
         }
 
         $balance = $wallet->balance($user);
-        $amount = (int) $request->amount;
-        $minPayout = $wallet->minPayout();
+        $amount = Money::round((float) $request->amount);
+        $minPayout = $wallet->minPayout($user);
 
         if ($balance < $amount) {
             return response()->json([
@@ -69,7 +75,7 @@ class WalletController extends Controller
         if ($amount < $minPayout) {
             return response()->json([
                 'success' => false,
-                'message' => "Minimum payout is {$minPayout}.",
+                'message' => 'Minimum payout is ' . Money::format($minPayout, $currency) . '.',
             ], 422);
         }
 
@@ -89,6 +95,7 @@ class WalletController extends Controller
         $payout = PayoutRequest::create([
             'user_id' => $user->id,
             'amount' => $amount,
+            'currency' => $currency,
             'method' => $request->method,
             'destination' => $request->method === 'bank' ? $request->account : ['phone' => $request->phone],
             'status' => PayoutRequest::STATUS_REQUESTED,
@@ -102,7 +109,8 @@ class WalletController extends Controller
             'message' => 'Payout request received. Funds will be released after the holding period.',
             'payout' => [
                 'id' => $payout->id,
-                'amount' => (int) $payout->amount,
+                'amount' => Money::number($payout->amount),
+                'currency' => $payout->currency,
                 'status' => $payout->status,
                 'hold_until_at' => $payout->hold_until_at?->toIso8601String(),
             ],

@@ -12,7 +12,7 @@
             ['Fleet Devices', $metrics['devices'], 'fa-mobile-screen-button', 'text-purple-400'],
             ['Active Today', $metrics['active_today'], 'fa-bolt', 'text-amber-400'],
             ['Vendor Streams Today', $metrics['streams_today'], 'fa-circle-play', 'text-cyan-400'],
-            ['Vendor Earned Total', '₦' . number_format($metrics['total_earned']), 'fa-naira-sign', 'text-emerald-400'],
+            ['Vendor Earned Total', \App\Support\Money::format($metrics['total_earned'], \App\Support\Money::USD), 'fa-dollar-sign', 'text-emerald-400'],
             ['Fraud Sessions', $metrics['fraud_sessions'], 'fa-flag', 'text-red-400'],
             ['Pending Payouts', $metrics['pending_payouts'], 'fa-hourglass-half', 'text-orange-400'],
         ] as [$label, $value, $icon, $color])
@@ -96,7 +96,7 @@
                                     <p class="font-bold text-cyan-400">{{ (int) ($vendor->streams_today_count ?? 0) }}</p>
                                     <p class="text-[10px] text-gray-500">{{ (int) ($vendor->rewarded_streams_count ?? 0) }} total</p>
                                 </td>
-                                <td class="px-4 py-4 text-right font-semibold">₦{{ number_format((int) ($vendor->total_earned ?? 0)) }}</td>
+                                <td class="px-4 py-4 text-right font-semibold">{{ \App\Support\Money::format($vendor->total_earned ?? 0, \App\Support\Money::USD) }}</td>
                                 <td class="px-4 py-4 text-xs text-gray-500">
                                     {{ $vendor->last_seen_at ? \Illuminate\Support\Carbon::parse($vendor->last_seen_at)->diffForHumans() : 'Never' }}
                                 </td>
@@ -125,7 +125,7 @@
                             <p class="text-sm font-semibold truncate">{{ $earner->name }}</p>
                             <p class="text-xs text-gray-500">{{ $earner->devices_count ?? 0 }} devices</p>
                         </div>
-                        <p class="text-sm font-bold text-emerald-400">₦{{ number_format((int) ($earner->earned ?? 0)) }}</p>
+                        <p class="text-sm font-bold text-emerald-400">{{ \App\Support\Money::format($earner->earned ?? 0, \App\Support\Money::USD) }}</p>
                     </div>
                 @empty
                     <p class="px-6 py-8 text-center text-sm text-gray-500">No earnings yet.</p>

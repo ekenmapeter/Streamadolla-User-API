@@ -19,6 +19,7 @@ class PayoutRequest extends Model
     protected $fillable = [
         'user_id',
         'amount',
+        'currency',
         'method',
         'destination',
         'status',
@@ -31,7 +32,7 @@ class PayoutRequest extends Model
     protected function casts(): array
     {
         return [
-            'amount' => 'integer',
+            'amount' => 'float',
             'destination' => 'array',
             'hold_until_at' => 'datetime',
             'paid_at' => 'datetime',

@@ -84,11 +84,11 @@
         </div>
         <div class="bg-gray-900 border border-white/10 rounded-2xl p-6">
             <p class="text-sm text-gray-400">Vendor Paid Today</p>
-            <p class="text-2xl font-extrabold mt-2 text-green-400">₦{{ number_format($stats['vendor_paid_today']) }}</p>
+            <p class="text-2xl font-extrabold mt-2 text-green-400">{{ \App\Support\Money::format($stats['vendor_paid_today'], \App\Support\Money::USD) }}</p>
         </div>
         <div class="bg-gray-900 border border-white/10 rounded-2xl p-6">
             <p class="text-sm text-gray-400">Vendor Rate / Stream</p>
-            <p class="text-2xl font-extrabold mt-2 text-emerald-400">₦{{ number_format((int) \App\Models\AppSetting::get('vendor_rate_per_stream', 5)) }}</p>
+            <p class="text-2xl font-extrabold mt-2 text-emerald-400">{{ \App\Support\Money::format(\App\Models\AppSetting::get('vendor_rate_per_stream', 0.001), \App\Support\Money::USD) }}</p>
         </div>
     </div>
 

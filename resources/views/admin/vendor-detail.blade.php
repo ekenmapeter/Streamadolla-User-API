@@ -42,9 +42,9 @@
             ['Rewarded Streams', $stats['total_streams'], 'fa-circle-play', 'text-emerald-400'],
             ['Fraud Sessions', $stats['fraud_sessions'], 'fa-flag', 'text-red-400'],
             ['Open Sessions', $stats['open_sessions'], 'fa-hourglass-half', 'text-amber-400'],
-            ['Total Earned', '₦' . number_format($stats['total_earned']), 'fa-naira-sign', 'text-emerald-400'],
-            ['Paid Out', '₦' . number_format($stats['total_paid_out']), 'fa-money-bill-transfer', 'text-blue-400'],
-            ['Wallet Balance', '₦' . number_format($stats['balance']), 'fa-wallet', 'text-green-400'],
+            ['Total Earned', \App\Support\Money::format($stats['total_earned'], \App\Support\Money::USD), 'fa-dollar-sign', 'text-emerald-400'],
+            ['Paid Out', \App\Support\Money::format($stats['total_paid_out'], \App\Support\Money::USD), 'fa-money-bill-transfer', 'text-blue-400'],
+            ['Wallet Balance', \App\Support\Money::format($stats['balance'], \App\Support\Money::USD), 'fa-wallet', 'text-green-400'],
             ['Payout Requests', $user->payoutRequests()->count(), 'fa-money-bill-wave', 'text-orange-400'],
         ] as [$label, $value, $icon, $color])
             <div class="bg-gray-900 border border-white/10 rounded-2xl p-5">
@@ -95,7 +95,7 @@
                                     {{ (int) ($deviceTotals[$device->id] ?? 0) }}
                                     <p class="text-[10px] text-amber-400 font-medium">{{ (int) $device->total_streams }} all-time</p>
                                 </td>
-                                <td class="px-4 py-3.5 text-right font-semibold">₦{{ number_format((int) ($deviceEarned[$device->id] ?? 0)) }}</td>
+                                <td class="px-4 py-3.5 text-right font-semibold">{{ \App\Support\Money::format($deviceEarned[$device->id] ?? 0, \App\Support\Money::USD) }}</td>
                                 <td class="px-4 py-3.5 text-xs text-gray-500">{{ $device->last_seen?->diffForHumans() ?? 'Never' }}</td>
                             </tr>
                         @empty
@@ -137,8 +137,8 @@
                                 <td class="px-5 py-3.5">
                                     <span class="text-xs px-2.5 py-1 rounded-full font-medium {{ $tcolors[$txn->type] ?? 'bg-white/5 text-gray-400' }}">{{ $txn->type }}</span>
                                 </td>
-                                <td class="px-4 py-3.5 font-semibold {{ $isCredit ? 'text-green-400' : 'text-blue-400' }}">{{ $isCredit ? '+' : '−' }}₦{{ number_format($txn->amount) }}</td>
-                                <td class="px-4 py-3.5 text-xs text-gray-400">₦{{ number_format($txn->balance_after) }}</td>
+                                <td class="px-4 py-3.5 font-semibold {{ $isCredit ? 'text-green-400' : 'text-blue-400' }}">{{ $isCredit ? '+' : '−' }}{{ \App\Support\Money::format($txn->amount, $txn->currency ?? \App\Support\Money::USD) }}</td>
+                                <td class="px-4 py-3.5 text-xs text-gray-400">{{ \App\Support\Money::format($txn->balance_after, $txn->currency ?? \App\Support\Money::USD) }}</td>
                                 <td class="px-4 py-3.5 text-xs text-gray-500">{{ $txn->created_at->diffForHumans() }}</td>
                             </tr>
                         @empty
@@ -174,7 +174,7 @@
                                     <p class="text-[11px] text-gray-600 truncate max-w-[200px]">{{ $play->media_url }}</p>
                                 </td>
                                 <td class="px-4 py-3.5 text-xs text-gray-400">{{ $play->assignment?->device?->name ?? '—' }}</td>
-                                <td class="px-4 py-3.5 text-right font-semibold text-emerald-400">₦{{ number_format((int) $play->reward_amount) }}</td>
+                                <td class="px-4 py-3.5 text-right font-semibold text-emerald-400">{{ \App\Support\Money::format($play->reward_amount, \App\Support\Money::USD) }}</td>
                                 <td class="px-4 py-3.5 text-xs text-gray-500">{{ $play->created_at?->diffForHumans() }}</td>
                             </tr>
                         @empty

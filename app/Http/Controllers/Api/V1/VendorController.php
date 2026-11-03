@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Device;
 use App\Models\StreamPlay;
+use App\Support\Money;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -75,7 +76,8 @@ class VendorController extends Controller
             ->get()
             ->map(fn (StreamPlay $play) => [
                 'id' => $play->id,
-                'reward_amount' => (int) $play->reward_amount,
+                'reward_amount' => Money::number($play->reward_amount),
+                'currency' => Money::USD,
                 'platform' => $play->platform,
                 'media_url' => $play->media_url,
                 'media_title' => $play->media_title ?? $play->assignment?->media_title ?? $play->track?->title,
@@ -89,12 +91,13 @@ class VendorController extends Controller
         $summary = [
             'streams_today' => (int) $user->streamPlays()->where('status', $rewarded)->whereDate('created_at', $today)->count(),
             'total_streams' => (int) $user->streamPlays()->where('status', $rewarded)->count(),
-            'total_earned' => (int) $user->streamPlays()->where('status', $rewarded)->sum('reward_amount'),
-            'earned_today' => (int) $user->streamPlays()->where('status', $rewarded)->whereDate('created_at', $today)->sum('reward_amount'),
+            'total_earned' => Money::number($user->streamPlays()->where('status', $rewarded)->sum('reward_amount')),
+            'earned_today' => Money::number($user->streamPlays()->where('status', $rewarded)->whereDate('created_at', $today)->sum('reward_amount')),
         ];
 
         return response()->json([
             'success' => true,
+            'currency' => Money::USD,
             'summary' => $summary,
             'streams' => $streams,
         ]);
@@ -111,7 +114,8 @@ class VendorController extends Controller
             'platform' => $device->metadata['platform'] ?? null,
             'streams_today' => (int) ($device->streams_today ?? 0),
             'total_streams' => (int) $device->total_streams,
-            'total_earned' => (int) $device->total_earned,
+            'total_earned' => Money::number($device->total_earned),
+            'currency' => Money::USD,
         ];
     }
 }
