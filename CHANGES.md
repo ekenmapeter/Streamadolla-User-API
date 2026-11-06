@@ -12,6 +12,7 @@
 - Vendor APK **v1.0.7** adds persistent background execution, FCM token retry/re-registration, and heartbeat-driven pending-assignment recovery copied from the private controller app.
 - Vendor APK **v1.0.8** adds the private app's permission panel (notifications, battery exemption, display over other apps, media control), background service toggle, keep-awake switch, background/earnings status card, and a working update download progress bar.
 - The `/device-assignments` countdown is now drift-resistant, fires at 00:00 even when the page loads late, retries failed advances, and shares a server lock with the campaign worker so a track cannot advance twice.
+- Track advance no longer sends a stop command before the next play. That stale stop was being reported after the new track was already written, marking the new assignment `stopped` and ending the campaign after one track.
 - Run `php artisan migrate` after deploying so the vendor rate, app version gate, and reset take effect.
 
 ## Feature 1: Interstitial Content

@@ -356,22 +356,11 @@ class AssignmentController extends Controller
                 $currentIndex = 0;
             }
 
-            // 1. Send stop command first
-            try {
-                $stopMsg = CloudMessage::withTarget('token', $device->fcm_token)
-                    ->withData([
-                        'command'       => 'stop',
-                        'action'        => 'stop',
-                        'assignment_id' => (string) $assignment->id,
-                        'timestamp'     => (string) now()->timestamp,
-                        'command_id'    => Str::uuid()->toString(),
-                    ])
-                    ->withAndroidConfig(['priority' => 'high']);
-                $this->messaging->send($stopMsg);
-            } catch (\Exception $e) {}
-
-            sleep(3);
-
+            // Do not send a stop here. The app reports "stopped" when it
+            // receives one, and that report can arrive after the new track
+            // has already been written, leaving the assignment stopped.
+            // The next play command replaces the current media directly,
+            // matching ExecuteCampaigns' behaviour.
             $campaignMediaUrl = $campaign->interstitial_media_url;
             $interstitialInterval = $campaign->interstitial_every;
 
