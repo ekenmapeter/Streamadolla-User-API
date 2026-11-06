@@ -308,7 +308,7 @@
                                     <div class="mt-3 flex flex-wrap items-center justify-end gap-3">
                                         @if (in_array($assignment->status, ['stopped', 'failed'], true))
                                             <form action="{{ route('assignments.retry', $assignment->id) }}" method="POST"
-                                                onsubmit="event.stopPropagation(); return confirm('Retry this campaign on {{ $assignment->device?->name ?? 'this device' }}?');">
+                                                onsubmit="event.stopPropagation(); return confirm('Retry this campaign on this device?');">
                                                 @csrf
                                                 <button type="submit" onclick="event.stopPropagation()"
                                                     class="text-[10px] font-black uppercase tracking-widest text-emerald-500 hover:text-emerald-700 transition-colors">
