@@ -192,6 +192,56 @@ class VendorSessionController extends Controller
         ], 201);
     }
 
+    /**
+     * Pending campaign assignment for this exact phone. The app calls this on
+     * startup/heartbeat so a missed FCM push does not leave the phone idle.
+     */
+    public function pending(Request $request)
+    {
+        $user = $request->user();
+        $fingerprint = trim((string) $request->query('fingerprint'));
+
+        if ($fingerprint === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Device fingerprint is required.',
+            ], 422);
+        }
+
+        $device = \App\Models\Device::where('device_id', 'user-' . $fingerprint)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (! $device) {
+            return response()->json([
+                'success' => true,
+                'device_id' => null,
+                'assignments' => [],
+            ]);
+        }
+
+        $assignments = DeviceAssignment::with('campaignTrack')
+            ->where('device_id', $device->id)
+            ->where('status', 'pending')
+            ->whereNotNull('media_url')
+            ->orderBy('assigned_at')
+            ->get()
+            ->map(fn (DeviceAssignment $assignment) => [
+                'assignment_id' => $assignment->id,
+                'platform' => $assignment->platform,
+                'media_url' => $assignment->media_url,
+                'media_title' => $assignment->media_title,
+                'duration_seconds' => (int) ($assignment->campaignTrack?->duration_seconds ?? 180),
+            ])
+            ->values();
+
+        return response()->json([
+            'success' => true,
+            'device_id' => $device->id,
+            'assignments' => $assignments,
+        ]);
+    }
+
     public function control(Request $request, DeviceAssignment $assignment)
     {
         $user = $request->user();

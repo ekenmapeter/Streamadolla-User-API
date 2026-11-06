@@ -284,12 +284,23 @@ class CampaignController extends Controller
                 if (!$messaging) throw new \Exception("Firebase Messaging initialization failed.");
                 $messaging->send($message);
 
-                $assignment->update(['status' => 'playing', 'started_at' => now()]);
+                // Vendor phones confirm the start via the session endpoint.
+                // Keeping the assignment pending until then lets the app pull
+                // it on its next launch/heartbeat if this push is lost.
+                $isVendorDevice = (bool) $device->user?->isVendor();
+
+                $assignment->update([
+                    'status' => $isVendorDevice ? 'pending' : 'playing',
+                    'started_at' => $isVendorDevice ? null : now(),
+                ]);
                 $device->update(['status' => 'streaming', 'last_seen' => now()]);
                 $sendResults['successful']++;
                 $assignments[] = $assignment;
             } catch (\Exception $e) {
-                $assignment->update(['status' => 'failed']);
+                // Keep vendor work pending so the app can pull it on reconnect.
+                $assignment->update([
+                    'status' => $device->user?->isVendor() ? 'pending' : 'failed',
+                ]);
                 $sendResults['failed']++;
                 $sendResults['errors'][] = [
                     'device_id' => $device->id,
@@ -298,9 +309,13 @@ class CampaignController extends Controller
             }
         }
 
+        $retryNote = $sendResults['failed'] > 0
+            ? " {$sendResults['failed']} device(s) are pending and will start when they next reconnect."
+            : '';
+
         return response()->json([
             'success'     => true,
-            'message'     => "Campaign '{$campaign->name}' deployed to {$sendResults['successful']} device(s)",
+            'message'     => "Campaign '{$campaign->name}' deployed to {$sendResults['successful']} device(s)." . $retryNote,
             'assignments' => $assignments,
             'stats'       => $sendResults,
         ]);

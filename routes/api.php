@@ -133,6 +133,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/vendor/devices', [VendorController::class, 'devices']);
         Route::put('/vendor/devices/{device}', [VendorController::class, 'update']);
         Route::get('/vendor/earnings', [VendorController::class, 'earnings']);
+        Route::get('/vendor/assignments/pending', [VendorSessionController::class, 'pending']);
 
         Route::post('/vendor/sessions/{assignment}/start', [VendorSessionController::class, 'start']);
         Route::post('/vendor/sessions/{assignment}/checkpoint', [VendorSessionController::class, 'checkpoint']);

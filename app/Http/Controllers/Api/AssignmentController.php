@@ -96,7 +96,8 @@ class AssignmentController extends Controller
                     $device->update(['status' => 'streaming', 'last_seen' => now()]);
                     $sendResults['successful']++;
                 } catch (\Exception $e) {
-                    $assignment->update(['status' => 'failed']);
+                    // Leave it pending so the phone can pull it on reconnect.
+                    $assignment->update(['status' => 'pending']);
                     $sendResults['failed']++;
                     $sendResults['errors'][] = [
                         'device_id' => $device->id,

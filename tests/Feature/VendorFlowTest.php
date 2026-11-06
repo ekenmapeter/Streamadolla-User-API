@@ -584,6 +584,24 @@ class VendorFlowTest extends TestCase
         $this->assertSame('Renamed Vendor', $vendor->fresh()->name);
     }
 
+    public function test_vendor_can_pull_pending_assignment_by_fingerprint(): void
+    {
+        $this->seedBase();
+        $vendor = $this->registerVendor();
+        $this->vendorToken = $this->vendorToken($vendor);
+        $device = $this->registerVendorDevice($vendor, 'fp-pending-1', 'fcm-pending-1');
+        $track = $this->makeTrack();
+        $assignment = $this->makeAssignment($device, $track);
+        $assignment->update(['status' => 'pending']);
+
+        $this->getJson('/api/v1/vendor/assignments/pending?fingerprint=fp-pending-1', [
+            'Authorization' => 'Bearer ' . $this->vendorToken,
+        ])->assertOk()
+            ->assertJsonPath('assignments.0.assignment_id', $assignment->id)
+            ->assertJsonPath('assignments.0.media_url', $track->media_url)
+            ->assertJsonPath('assignments.0.platform', $track->platform);
+    }
+
     public function test_vendor_device_rekeys_restored_fingerprint_without_losing_assignments(): void
     {
         $this->seedBase();
