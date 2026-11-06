@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Device;
 use App\Models\DeviceAssignment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Kreait\Firebase\Factory;
@@ -286,9 +287,54 @@ class AssignmentController extends Controller
 
     public function nextTrack(DeviceAssignment $assignment)
     {
+        $lock = Cache::lock('assignment-next:' . $assignment->id, 15);
+
+        if (! $lock->get()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Track advance already in progress.',
+            ], 409);
+        }
+
+        try {
+            return $this->advanceNextTrack($assignment);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    private function advanceNextTrack(DeviceAssignment $assignment)
+    {
+        $assignment->refresh();
+        $assignment->loadMissing('campaignTrack');
+
         $device = $assignment->device;
         if (!$device || !$device->fcm_token) {
             return response()->json(['success' => false, 'message' => 'Device not found'], 400);
+        }
+
+        if ($assignment->status !== 'playing') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Assignment is not playing.',
+            ], 409);
+        }
+
+        if ($assignment->campaign_id && $assignment->campaign_track_id) {
+            $duration = (int) ($assignment->campaignTrack?->duration_seconds ?? 180);
+            $elapsed = $assignment->started_at
+                ? max(0, now()->timestamp - $assignment->started_at->timestamp)
+                : 0;
+
+            // The JS countdown can fire a few milliseconds early. Tell it to
+            // retry instead of skipping the track.
+            if ($elapsed < $duration - 2) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Track is still playing.',
+                    'remaining' => max(0, $duration - $elapsed),
+                ], 409);
+            }
         }
 
         if ($assignment->campaign_id && $assignment->campaign_track_id) {

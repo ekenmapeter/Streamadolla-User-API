@@ -387,68 +387,102 @@
     <script>
         // Individual Track Timers
         document.addEventListener('DOMContentLoaded', () => {
-            const timers = document.querySelectorAll('.track-timer');
+            const nextInFlight = new Set();
+            const nextRetryTimers = new Map();
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
-            timers.forEach(timer => {
-                let remaining = parseInt(timer.getAttribute('data-remaining'), 10);
-                const assignmentId = timer.getAttribute('data-assignment-id');
-                const display = timer.querySelector('.time-display');
-                const row = document.getElementById(`row-${assignmentId}`);
+            function formatRemaining(seconds) {
+                const h = Math.floor(seconds / 3600);
+                const m = Math.floor((seconds % 3600) / 60);
+                const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+                return h > 0
+                    ? `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s}`
+                    : `${m.toString().padStart(2, '0')}:${s}`;
+            }
 
-                if (remaining > 0) {
-                    const interval = setInterval(() => {
-                        // Dynamically read remaining so AJAX can sync it
-                        let currentRemaining = parseInt(timer.getAttribute('data-remaining'), 10);
-                        currentRemaining--;
-                        timer.setAttribute('data-remaining', currentRemaining);
+            function scheduleNextRetry(assignmentId, timerEl) {
+                if (nextRetryTimers.has(assignmentId)) return;
 
-                        if (currentRemaining <= 0) {
-                            clearInterval(interval);
-                            display.innerText = '00:00';
+                const timer = setTimeout(() => {
+                    nextRetryTimers.delete(assignmentId);
+                    if (document.body.contains(timerEl)) {
+                        triggerNext(assignmentId, timerEl);
+                    }
+                }, 3000);
 
-                            // Visual feedback
-                            timer.classList.remove('bg-primary-50', 'text-primary-600');
-                            timer.classList.add('bg-amber-50', 'text-amber-600');
+                nextRetryTimers.set(assignmentId, timer);
+            }
 
-                            // Fetch next track API
-                            fetch(`/dashboard-api/assignments/${assignmentId}/next`, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'Accept': 'application/json',
-                                        'X-CSRF-TOKEN': document.querySelector(
-                                            'meta[name="csrf-token"]').getAttribute(
-                                            'content')
-                                    }
-                                })
-                                .then(res => res.json())
-                                .then(data => {
-                                    if (data.success) {
-                                        if (row) {
-                                            row.style.opacity = '0';
-                                            setTimeout(() => {
-                                                window.location.reload();
-                                            }, 500);
-                                        } else {
-                                            window.location.reload();
-                                        }
-                                    }
-                                })
-                                .catch(err => console.error('Next track error:', err));
-                        } else {
-                            const h = Math.floor(currentRemaining / 3600);
-                            const m = Math.floor((currentRemaining % 3600) / 60);
-                            const s = (currentRemaining % 60).toString().padStart(2, '0');
-                            
-                            if (h > 0) {
-                                display.innerText = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s}`;
-                            } else {
-                                display.innerText = `${m.toString().padStart(2, '0')}:${s}`;
-                            }
-                        }
-                    }, 1000);
-                }
-            });
+            function triggerNext(assignmentId, timerEl) {
+                if (!assignmentId || nextInFlight.has(assignmentId)) return;
+
+                nextInFlight.add(assignmentId);
+
+                fetch(`/dashboard-api/assignments/${assignmentId}/next`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    }
+                })
+                .then(async response => {
+                    let data = {};
+                    try { data = await response.json(); } catch (_) {}
+
+                    if (data.success) {
+                        window.location.reload();
+                        return;
+                    }
+
+                    // Server says the track is not due yet (clock skew) or the
+                    // request failed. Keep retrying instead of freezing at 00:00.
+                    scheduleNextRetry(assignmentId, timerEl);
+                })
+                .catch(err => {
+                    console.error('Next track error:', err);
+                    scheduleNextRetry(assignmentId, timerEl);
+                })
+                .finally(() => nextInFlight.delete(assignmentId));
+            }
+
+            function tickCountdowns() {
+                document.querySelectorAll('.track-timer').forEach(timer => {
+                    let endAt = Number(timer.dataset.endAt || 0);
+
+                    if (!Number.isFinite(endAt) || endAt <= 0) {
+                        const initial = Math.max(
+                            0,
+                            parseInt(timer.dataset.remaining || '0', 10) || 0
+                        );
+                        endAt = Date.now() + initial * 1000;
+                        timer.dataset.endAt = String(endAt);
+                    }
+
+                    const remaining = Math.max(
+                        0,
+                        Math.ceil((endAt - Date.now()) / 1000)
+                    );
+
+                    timer.dataset.remaining = String(remaining);
+
+                    const display = timer.querySelector('.time-display');
+                    if (display) display.innerText = formatRemaining(remaining);
+
+                    // Execute the advance exactly once when the countdown
+                    // reaches zero. A failed/not-due response retries in 3s.
+                    if (remaining <= 0) {
+                        timer.classList.remove('bg-primary-50', 'text-primary-600');
+                        timer.classList.add('bg-amber-50', 'text-amber-600');
+                        triggerNext(timer.dataset.assignmentId, timer);
+                    }
+                });
+            }
+
+            // One single ticker for every timer. This cannot be broken by a
+            // pending assignment being re-rendered or a timer starting at 0.
+            setInterval(tickCountdowns, 1000);
+            tickCountdowns();
 
             // AJAX Real-time Synchronization
             let syncInFlight = false;
@@ -489,6 +523,10 @@
                                 // Snap to server time if desynced by more than 2 seconds
                                 if (Math.abs(domRemaining - assignment.remaining) > 2) {
                                     timerEl.setAttribute('data-remaining', assignment.remaining);
+                                    timerEl.setAttribute(
+                                        'data-end-at',
+                                        String(Date.now() + Math.max(0, assignment.remaining) * 1000)
+                                    );
                                 }
                             }
                         });
@@ -539,17 +577,6 @@
 
             // Run worker check every 30 seconds
             setInterval(triggerWorker, 30000);
-
-            // Safety net: refresh the page periodically so stopped/completed
-            // or newly assigned rows are never left stale. Skip while the
-            // admin is selecting rows or typing.
-            setInterval(() => {
-                if (document.visibilityState !== 'visible') return;
-                if (document.querySelector('.assignment-checkbox:checked')) return;
-                const active = document.activeElement;
-                if (active && ['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName)) return;
-                window.location.reload();
-            }, 30000);
 
             // Initial runs
             setTimeout(syncTimers, 500);
