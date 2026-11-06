@@ -15,6 +15,7 @@ class DeviceController extends Controller
 
         $validator = Validator::make($request->all(), [
             'fingerprint' => 'required|string|max:255',
+            'previous_fingerprint' => 'nullable|string|max:255',
             'fcm_token' => 'required|string',
             'platform' => 'sometimes|in:android,ios',
             'app_version' => 'nullable|string|max:30',
@@ -24,8 +25,35 @@ class DeviceController extends Controller
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        $device = UserDevice::updateOrCreate(
-            ['fingerprint' => $request->fingerprint],
+        $fingerprint = $request->fingerprint;
+        $previousFingerprint = $request->input('previous_fingerprint');
+        $device = null;
+
+        // A restored/cloned install may have an old UUID. Re-key that row to
+        // the phone's hardware ID instead of creating a second fleet device,
+        // which would leave campaigns attached to the wrong phone.
+        if ($previousFingerprint && $previousFingerprint !== $fingerprint) {
+            $old = UserDevice::where('fingerprint', $previousFingerprint)
+                ->where('user_id', $user->id)
+                ->first();
+
+            $alreadyExists = UserDevice::where('fingerprint', $fingerprint)->exists();
+
+            if ($old && ! $alreadyExists) {
+                $old->update([
+                    'fingerprint' => $fingerprint,
+                    'fcm_token' => $request->fcm_token,
+                    'platform' => $request->input('platform', 'android'),
+                    'app_version' => $request->input('app_version'),
+                    'last_seen_at' => now(),
+                ]);
+
+                $device = $old;
+            }
+        }
+
+        $device ??= UserDevice::updateOrCreate(
+            ['fingerprint' => $fingerprint],
             [
                 'user_id' => $user->id,
                 'fcm_token' => $request->fcm_token,
@@ -37,7 +65,7 @@ class DeviceController extends Controller
 
         // Vendors: mirror the phone into the fleet so the command center can
         // assign campaigns straight to it.
-        $vendorDevices->syncFleetDevice($user, $device);
+        $vendorDevices->syncFleetDevice($user, $device, $previousFingerprint);
 
         return response()->json([
             'success' => true,

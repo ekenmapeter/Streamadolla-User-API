@@ -584,6 +584,37 @@ class VendorFlowTest extends TestCase
         $this->assertSame('Renamed Vendor', $vendor->fresh()->name);
     }
 
+    public function test_vendor_device_rekeys_restored_fingerprint_without_losing_assignments(): void
+    {
+        $this->seedBase();
+        $vendor = $this->registerVendor();
+        $this->vendorToken = $this->vendorToken($vendor);
+
+        $oldDevice = $this->registerVendorDevice($vendor, 'fp-restored-old', 'fcm-restored-old');
+        $assignment = $this->makeAssignment($oldDevice, $this->makeTrack());
+        $assignment->update(['status' => 'playing', 'started_at' => now()]);
+
+        $this->postJson('/api/v1/device/register', [
+            'fingerprint' => 'fp-hardware-new',
+            'previous_fingerprint' => 'fp-restored-old',
+            'fcm_token' => 'fcm-hardware-new',
+            'platform' => 'android',
+            'app_version' => '1.0.5',
+        ], ['Authorization' => 'Bearer ' . $this->vendorToken])->assertOk();
+
+        $this->assertDatabaseMissing('user_devices', ['fingerprint' => 'fp-restored-old']);
+        $this->assertDatabaseHas('user_devices', ['fingerprint' => 'fp-hardware-new']);
+        $this->assertDatabaseMissing('devices', ['device_id' => 'user-fp-restored-old']);
+
+        $newDevice = Device::where('device_id', 'user-fp-hardware-new')->firstOrFail();
+        $this->assertSame($oldDevice->id, $newDevice->id);
+        $this->assertSame('fcm-hardware-new', $newDevice->fcm_token);
+
+        $assignment->refresh();
+        $this->assertSame('playing', $assignment->status);
+        $this->assertSame($newDevice->id, $assignment->device_id);
+    }
+
     public function test_vendor_wallet_and_payout_are_denominated_in_usd(): void
     {
         $this->seedBase();

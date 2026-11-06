@@ -7,6 +7,7 @@
 - Existing vendor wallet balances and pending payouts are reset to zero by the migration.
 - Vendor withdrawals use `vendor_min_payout` (default **$1.00**) and are converted to Naira at `usd_ngn_rate` (default **1,344.50**) when sent to Paystack.
 - Vendor APK **v1.0.4** displays USD amounts and supports fractional payouts (published to `public/vendor-download/`).
+- Vendor APK **v1.0.5** hardens device identity (hardware ID + no Android backup) so cloned/restored app data cannot make two phones share one fleet device or FCM token.
 - Run `php artisan migrate` after deploying so the vendor rate, app version gate, and reset take effect.
 
 ## Feature 1: Interstitial Content
