@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Device;
 use App\Models\DeviceAssignment;
+use App\Models\DeviceSession;
+use App\Services\VendorSessionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Validator;
@@ -338,6 +340,19 @@ class AssignmentController extends Controller
         }
 
         if ($assignment->campaign_id && $assignment->campaign_track_id) {
+            // Close the session for the track that just finished before the
+            // assignment points at the next track. Otherwise the app reuses
+            // the old open session and misses a reward for this track.
+            $openSessions = DeviceSession::where('device_assignment_id', $assignment->id)
+                ->where('status', DeviceSession::STATUS_OPEN)
+                ->get();
+
+            $vendorSessions = app(VendorSessionService::class);
+
+            foreach ($openSessions as $openSession) {
+                $vendorSessions->completeSession($openSession, $device);
+            }
+
             $campaign = $assignment->campaign;
 
             $tracks = $campaign->tracks()->orderBy('position_order')->get();

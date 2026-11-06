@@ -13,6 +13,7 @@ use App\Models\Track;
 use App\Models\User;
 use App\Models\UserDevice;
 use App\Models\WalletTransaction;
+use App\Services\VendorSessionService;
 use App\Services\WalletService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -582,6 +583,37 @@ class VendorFlowTest extends TestCase
         ])->assertOk();
 
         $this->assertSame('Renamed Vendor', $vendor->fresh()->name);
+    }
+
+    public function test_track_advance_rewards_the_open_session_for_the_finished_track(): void
+    {
+        $this->seedBase();
+        $vendor = $this->registerVendor();
+        $this->vendorToken = $this->vendorToken($vendor);
+        $device = $this->registerVendorDevice($vendor, 'fp-advance-reward', 'fcm-advance-reward');
+        $assignment = $this->makeAssignment($device, $this->makeTrack());
+
+        $session = DeviceSession::create([
+            'vendor_id' => $vendor->id,
+            'device_id' => $device->id,
+            'device_assignment_id' => $assignment->id,
+            'min_duration_seconds' => 30,
+            'elapsed_seconds' => 45,
+            'checkpoints' => [],
+            'status' => DeviceSession::STATUS_OPEN,
+            'started_at' => now()->subSeconds(50),
+        ]);
+
+        $rewarded = app(VendorSessionService::class)
+            ->completeSession($session->fresh(), $device);
+
+        $this->assertTrue($rewarded);
+        $this->assertSame(DeviceSession::STATUS_REWARDED, $session->fresh()->status);
+        $this->assertDatabaseHas('stream_plays', [
+            'device_session_id' => $session->id,
+            'status' => StreamPlay::STATUS_REWARDED,
+        ]);
+        $this->assertEqualsWithDelta(0.001, app(WalletService::class)->balance($vendor->fresh()), 0.0000001);
     }
 
     public function test_vendor_can_pull_pending_assignment_by_fingerprint(): void

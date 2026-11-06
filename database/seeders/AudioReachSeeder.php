@@ -39,8 +39,8 @@ class AudioReachSeeder extends Seeder
             ['vendor_rate_per_stream', 0.001, 'vendors', 'Amount paid to a vendor per streamed assignment on their fleet device (USD)'],
             ['vendor_min_payout', 1.0, 'vendors', 'Minimum vendor wallet balance (USD) required to request a payout'],
             ['usd_ngn_rate', 1344.50, 'vendors', 'USD to NGN conversion rate used when paying vendor withdrawals through Paystack'],
-            ['vendor_app_version', '1.0.8', 'app', 'Current vendor app release version'],
-            ['vendor_min_app_version', '1.0.8', 'app', 'Minimum vendor app version the server will accept'],
+            ['vendor_app_version', '1.0.9', 'app', 'Current vendor app release version'],
+            ['vendor_min_app_version', '1.0.9', 'app', 'Minimum vendor app version the server will accept'],
             ['vendor_min_seconds', 30, 'vendors', 'Minimum stream duration before a vendor device session can be rewarded'],
             ['vendor_max_streams_per_device_per_day', 50, 'vendors', 'Max rewarded streams per vendor device per day'],
         ];

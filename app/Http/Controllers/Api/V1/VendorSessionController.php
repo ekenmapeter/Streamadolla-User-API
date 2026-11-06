@@ -39,10 +39,22 @@ class VendorSessionController extends Controller
             ->first();
 
         if ($existing) {
-            return response()->json([
-                'success' => true,
-                'session' => $this->sessionPayload($existing),
-            ]);
+            // If the assignment has moved to a newer track, this open session
+            // belongs to the previous track. Close/reward it and create a new
+            // one instead of reusing it for the new track.
+            $stale = ! $existing->started_at
+                || ($assignment->started_at
+                    && $assignment->started_at->gt($existing->started_at->copy()->addSeconds(10)));
+
+            if (! $stale) {
+                return response()->json([
+                    'success' => true,
+                    'session' => $this->sessionPayload($existing),
+                ]);
+            }
+
+            app(\App\Services\VendorSessionService::class)
+                ->completeSession($existing->fresh(), $device);
         }
 
         // A fresh track was assigned – any previous streams on this phone
