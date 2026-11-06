@@ -9,6 +9,7 @@
 - Vendor APK **v1.0.4** displays USD amounts and supports fractional payouts (published to `public/vendor-download/`).
 - Vendor APK **v1.0.5** hardens device identity (hardware ID + no Android backup) so cloned/restored app data cannot make two phones share one fleet device or FCM token.
 - Vendor APK **v1.0.6** fixes the identity-migration ordering so a restored phone regenerates its FCM token on the first launch after updating.
+- Vendor APK **v1.0.7** adds persistent background execution, FCM token retry/re-registration, and heartbeat-driven pending-assignment recovery copied from the private controller app.
 - Run `php artisan migrate` after deploying so the vendor rate, app version gate, and reset take effect.
 
 ## Feature 1: Interstitial Content

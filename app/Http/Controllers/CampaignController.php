@@ -297,6 +297,17 @@ class CampaignController extends Controller
                 $sendResults['successful']++;
                 $assignments[] = $assignment;
             } catch (\Exception $e) {
+                $errorText = $e->getMessage();
+
+                // A dead token must be refreshed by the phone. Clearing it
+                // makes the next heartbeat return re_register=true.
+                if ((bool) $device->user?->isVendor()
+                    && (stripos($errorText, 'unregistered') !== false
+                        || stripos($errorText, 'not found') !== false
+                        || stripos($errorText, 'registration token') !== false)) {
+                    $device->update(['fcm_token' => null]);
+                }
+
                 // Keep vendor work pending so the app can pull it on reconnect.
                 $assignment->update([
                     'status' => $device->user?->isVendor() ? 'pending' : 'failed',
@@ -304,7 +315,7 @@ class CampaignController extends Controller
                 $sendResults['failed']++;
                 $sendResults['errors'][] = [
                     'device_id' => $device->id,
-                    'error'     => $e->getMessage(),
+                    'error'     => $errorText,
                 ];
             }
         }

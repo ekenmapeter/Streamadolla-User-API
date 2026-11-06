@@ -93,21 +93,30 @@ class DeviceController extends Controller
             ->where('user_id', $user->id)
             ->first();
 
-        if ($device) {
-            $device->update([
-                'last_seen_at' => now(),
-                'free_move' => $request->boolean('free_move', $device->free_move),
+        if (! $device) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Device not registered yet.',
+                're_register' => true,
             ]);
-
-            // Keep the linked fleet device fresh while the phone is rented.
-            \App\Models\Device::where('device_id', 'user-' . $device->fingerprint)
-                ->where('user_id', $user->id)
-                ->update(['last_seen' => now(), 'status' => 'online']);
         }
+
+        $device->update([
+            'last_seen_at' => now(),
+            'free_move' => $request->boolean('free_move', $device->free_move),
+        ]);
+
+        // Keep the linked fleet device fresh while the phone is rented.
+        \App\Models\Device::where('device_id', 'user-' . $device->fingerprint)
+            ->where('user_id', $user->id)
+            ->update(['last_seen' => now(), 'status' => 'online']);
 
         return response()->json([
             'success' => true,
             'message' => 'Heartbeat received.',
+            // If the stored token was cleared (e.g. Firebase said it was
+            // unregistered), ask the app to refresh and register again.
+            're_register' => empty($device->fcm_token),
         ]);
     }
 }
