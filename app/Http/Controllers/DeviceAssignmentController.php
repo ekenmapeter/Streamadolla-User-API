@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Api\AssignmentController;
 use App\Models\DeviceAssignment;
+use App\Services\FirebaseMessagingService;
 use Illuminate\Http\Request;
 
 use Illuminate\Support\Str;
@@ -52,6 +54,112 @@ class DeviceAssignmentController extends Controller
             'success' => true,
             'assignments' => $assignments
         ]);
+    }
+
+    public function retry(DeviceAssignment $assignment)
+    {
+        $assignment->loadMissing(['device.user', 'campaign']);
+
+        $device = $assignment->device;
+        $campaign = $assignment->campaign;
+
+        if (! $device) {
+            return back()->with('error', 'This assignment has no device.');
+        }
+
+        if (! in_array($assignment->status, ['stopped', 'failed'], true)) {
+            return back()->with('error', 'Only stopped or failed assignments can be retried.');
+        }
+
+        // Stop anything else that may still be running on this phone.
+        DeviceAssignment::where('device_id', $device->id)
+            ->where('id', '!=', $assignment->id)
+            ->whereIn('status', ['pending', 'playing', 'paused'])
+            ->update(['status' => 'stopped']);
+
+        $assignedAt = now();
+        $mediaUrl = $assignment->media_url;
+        $mediaTitle = $assignment->media_title;
+        $platform = $assignment->platform;
+        $duration = 180;
+
+        if ($campaign) {
+            $tracks = $campaign->tracks()->orderBy('position_order')->get();
+
+            if ($tracks->isEmpty()) {
+                return back()->with('error', 'This campaign has no tracks to retry.');
+            }
+
+            $seed = "{$device->id}_{$campaign->id}_" . (int) $assignedAt->timestamp;
+            $shuffled = $tracks->sortBy(fn ($t) => md5($seed . $t->id))->values();
+            $startIndex = abs(crc32($seed . '_start')) % $shuffled->count();
+            $first = $shuffled[$startIndex];
+
+            $mediaUrl = $first->media_url;
+            $mediaTitle = $first->media_title ?? $campaign->name . ' - ' . $first->media_url;
+            $platform = $campaign->platform;
+            $duration = (int) ($first->duration_seconds ?? 180);
+
+            $assignment->update([
+                'campaign_track_id' => $first->id,
+                'shuffled_index' => $startIndex,
+                'cycle_track_count' => 0,
+                'is_interstitial' => false,
+                'platform' => $platform,
+                'media_url' => $mediaUrl,
+                'media_title' => $mediaTitle,
+                'status' => 'pending',
+                'assigned_at' => $assignedAt,
+                'started_at' => null,
+            ]);
+        } else {
+            $assignment->update([
+                'cycle_track_count' => 0,
+                'is_interstitial' => false,
+                'status' => 'pending',
+                'assigned_at' => $assignedAt,
+                'started_at' => null,
+            ]);
+        }
+
+        $isVendor = (bool) $device->user?->isVendor();
+        $sent = false;
+
+        if ($device->fcm_token) {
+            $sent = app(FirebaseMessagingService::class)->sendToToken($device->fcm_token, [
+                'command' => AssignmentController::platformCommand($platform),
+                'track_id' => (string) $mediaUrl,
+                'youtube_url' => (string) $mediaUrl,
+                'apple_music_url' => (string) $mediaUrl,
+                'media_url' => (string) $mediaUrl,
+                'duration_seconds' => (string) $duration,
+                'proxy_url' => (string) ($device->proxy_url ?? ''),
+                'action' => 'play',
+                'platform' => (string) $platform,
+                'assignment_id' => (string) $assignment->id,
+                'timestamp' => (string) now()->timestamp,
+                'command_id' => Str::uuid()->toString(),
+            ]);
+        }
+
+        // Vendor phones stay pending until they confirm the start; their
+        // heartbeat/pending-assignment pull will pick this up if FCM missed.
+        $assignment->update([
+            'status' => $isVendor ? 'pending' : ($sent ? 'playing' : 'failed'),
+            'started_at' => $isVendor ? null : ($sent ? now() : null),
+        ]);
+
+        $device->update([
+            'status' => ($sent || $isVendor) ? 'streaming' : 'online',
+            'last_seen' => now(),
+        ]);
+
+        return back()->with(
+            'success',
+            $sent
+                ? 'Campaign retry sent to the device.'
+                : 'Campaign retry queued. The phone will pick it up on its next check-in.'
+        );
     }
 
     public function destroySingle(DeviceAssignment $assignment)

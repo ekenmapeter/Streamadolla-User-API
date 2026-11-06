@@ -305,10 +305,23 @@
                                         </div>
                                     @endif
 
-                                    <div class="mt-3">
-                                        <form action="{{ route('assignments.destroy', $assignment->id) }}" method="POST" onsubmit="return confirm('Delete this assignment permanently?');">
+                                    <div class="mt-3 flex flex-wrap items-center justify-end gap-3">
+                                        @if (in_array($assignment->status, ['stopped', 'failed'], true))
+                                            <form action="{{ route('assignments.retry', $assignment->id) }}" method="POST"
+                                                onsubmit="event.stopPropagation(); return confirm('Retry this campaign on {{ $assignment->device?->name ?? 'this device' }}?');">
+                                                @csrf
+                                                <button type="submit" onclick="event.stopPropagation()"
+                                                    class="text-[10px] font-black uppercase tracking-widest text-emerald-500 hover:text-emerald-700 transition-colors">
+                                                    <i class="fas fa-rotate-right mr-1"></i> Retry Campaign
+                                                </button>
+                                            </form>
+                                        @endif
+
+                                        <form action="{{ route('assignments.destroy', $assignment->id) }}" method="POST"
+                                            onsubmit="event.stopPropagation(); return confirm('Delete this assignment permanently?');">
                                             @csrf
-                                            <button type="submit" class="text-[10px] font-black uppercase tracking-widest text-rose-400 hover:text-rose-600 transition-colors">
+                                            <button type="submit" onclick="event.stopPropagation()"
+                                                class="text-[10px] font-black uppercase tracking-widest text-rose-400 hover:text-rose-600 transition-colors">
                                                 <i class="fas fa-times-circle mr-1"></i> Delete Task
                                             </button>
                                         </form>

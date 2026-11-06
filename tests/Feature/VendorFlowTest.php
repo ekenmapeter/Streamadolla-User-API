@@ -671,6 +671,61 @@ class VendorFlowTest extends TestCase
         $this->assertEqualsWithDelta(0.75, app(WalletService::class)->balance($vendor->fresh()), 0.0000001);
     }
 
+    public function test_admin_can_retry_a_stopped_campaign_assignment(): void
+    {
+        $this->seedBase();
+
+        $admin = User::create([
+            'name' => 'Admin',
+            'email' => 'retry-admin@example.com',
+            'password' => bcrypt('password123'),
+            'role' => User::ROLE_ADMIN,
+            'status' => 'active',
+        ]);
+        $admin->forceFill(['email_verified_at' => now()])->save();
+
+        $vendor = $this->registerVendor('retry-vendor@example.com');
+        $this->vendorToken = $this->vendorToken($vendor);
+        $device = $this->registerVendorDevice($vendor, 'fp-retry', 'fcm-retry');
+
+        $this->mock(\App\Services\FirebaseMessagingService::class, function ($mock) {
+            $mock->shouldReceive('sendToToken')->once()->andReturn(true);
+        });
+
+        $campaign = Campaign::create([
+            'name' => 'Retry Campaign',
+            'platform' => 'spotify',
+            'is_active' => true,
+        ]);
+        $track = $campaign->tracks()->create([
+            'media_url' => 'https://open.spotify.com/track/retry',
+            'media_title' => 'Retry Track',
+            'position_order' => 0,
+            'duration_seconds' => 180,
+        ]);
+
+        $assignment = DeviceAssignment::create([
+            'device_id' => $device->id,
+            'campaign_id' => $campaign->id,
+            'campaign_track_id' => $track->id,
+            'platform' => 'spotify',
+            'media_url' => $track->media_url,
+            'media_title' => $track->media_title,
+            'status' => 'stopped',
+            'assigned_at' => now()->subHour(),
+            'started_at' => now()->subHour(),
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('assignments.retry', $assignment))
+            ->assertRedirect();
+
+        $assignment->refresh();
+        $this->assertSame('pending', $assignment->status);
+        $this->assertSame($track->id, $assignment->campaign_track_id);
+        $this->assertNull($assignment->started_at);
+    }
+
     public function test_admin_vendor_pages_render(): void
     {
         $this->seedBase();
