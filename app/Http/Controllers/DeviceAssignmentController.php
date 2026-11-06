@@ -28,20 +28,23 @@ class DeviceAssignmentController extends Controller
             ->map(function ($a) {
                 $duration = $a->campaignTrack ? $a->campaignTrack->duration_seconds : 180;
                 $elapsed = 0;
-                
+
                 if ($a->started_at) {
                     $diff = now()->timestamp - $a->started_at->timestamp;
-                    $elapsed = $diff > 0 ? $diff : 0; 
+                    $elapsed = $diff > 0 ? $diff : 0;
                 }
-                
+
                 $timeRemaining = max(0, $duration - $elapsed);
-                
+
                 return [
                     'id' => $a->id,
                     'status' => $a->status,
                     'remaining' => $timeRemaining,
+                    'duration' => $duration,
                     'media_title' => $a->media_title,
                     'media_url' => $a->media_url,
+                    'campaign_track_id' => $a->campaign_track_id,
+                    'started_at' => $a->started_at?->toIso8601String(),
                 ];
             });
 

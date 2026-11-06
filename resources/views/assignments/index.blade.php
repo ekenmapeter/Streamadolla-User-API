@@ -214,6 +214,8 @@
                         @forelse($assignments as $assignment)
                             <tr class="assignment-row transition-all duration-200 cursor-pointer hover:bg-slate-50"
                                 id="row-{{ $assignment->id }}"
+                                data-status="{{ $assignment->status }}"
+                                data-track-id="{{ $assignment->campaign_track_id }}"
                                 onclick="const tgt=event.target; if(tgt.type!=='checkbox'){document.getElementById('accordion-{{ $assignment->id }}').classList.toggle('hidden')}">
                                 <td class="px-4 py-2 w-12">
                                     <input type="checkbox" name="selected_ids[]" value="{{ $assignment->id }}"
@@ -449,26 +451,54 @@
             });
 
             // AJAX Real-time Synchronization
+            let syncInFlight = false;
+
             function syncTimers() {
+                if (syncInFlight) return;
+                syncInFlight = true;
+
                 fetch('{{ route('assignments.stats') }}')
                     .then(r => r.json())
                     .then(data => {
-                        if (data.success) {
-                            data.assignments.forEach(assignment => {
-                                const timerEl = document.querySelector(
-                                    `.track-timer[data-assignment-id="${assignment.id}"]`);
-                                if (timerEl) {
-                                    const domRemaining = parseInt(timerEl.getAttribute(
-                                        'data-remaining') || 0, 10);
-                                    // Snap to server time if desynced by more than 2 seconds
-                                    if (Math.abs(domRemaining - assignment.remaining) > 2) {
-                                        timerEl.setAttribute('data-remaining', assignment.remaining);
-                                    }
+                        if (!data.success) return;
+
+                        let needsReload = false;
+
+                        data.assignments.forEach(assignment => {
+                            const row = document.getElementById(`row-${assignment.id}`);
+                            if (!row) { needsReload = true; return; }
+
+                            // The phone confirmed the start or the worker moved
+                            // to the next track — reload so the table and
+                            // countdown reflect the new state.
+                            if ((row.dataset.status || '') !== (assignment.status || '')) {
+                                needsReload = true;
+                                return;
+                            }
+                            if ((row.dataset.trackId || '') !==
+                                `${assignment.campaign_track_id ?? ''}`) {
+                                needsReload = true;
+                                return;
+                            }
+
+                            const timerEl = document.querySelector(
+                                `.track-timer[data-assignment-id="${assignment.id}"]`);
+                            if (timerEl) {
+                                const domRemaining = parseInt(timerEl.getAttribute(
+                                    'data-remaining') || 0, 10);
+                                // Snap to server time if desynced by more than 2 seconds
+                                if (Math.abs(domRemaining - assignment.remaining) > 2) {
+                                    timerEl.setAttribute('data-remaining', assignment.remaining);
                                 }
-                            });
+                            }
+                        });
+
+                        if (needsReload) {
+                            window.location.reload();
                         }
                     })
-                    .catch(err => console.error('Error syncing timers:', err));
+                    .catch(err => console.error('Error syncing timers:', err))
+                    .finally(() => { syncInFlight = false; });
             }
 
             // Hidden Worker Trigger (Keeps campaigns advancing)
@@ -506,9 +536,20 @@
 
             // Sync every 5 seconds
             setInterval(syncTimers, 5000);
-            
+
             // Run worker check every 30 seconds
             setInterval(triggerWorker, 30000);
+
+            // Safety net: refresh the page periodically so stopped/completed
+            // or newly assigned rows are never left stale. Skip while the
+            // admin is selecting rows or typing.
+            setInterval(() => {
+                if (document.visibilityState !== 'visible') return;
+                if (document.querySelector('.assignment-checkbox:checked')) return;
+                const active = document.activeElement;
+                if (active && ['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName)) return;
+                window.location.reload();
+            }, 30000);
 
             // Initial runs
             setTimeout(syncTimers, 500);
