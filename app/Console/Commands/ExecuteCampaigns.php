@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Models\AppSetting;
@@ -65,6 +66,26 @@ class ExecuteCampaigns extends Command
     }
 
     private function processSingleAssignment(
+        DeviceAssignment $assignment,
+        mixed $messaging,
+        bool $force
+    ): bool {
+        // The assignments page can also fire /next from its countdown. Use
+        // the same lock so a track can never be advanced twice.
+        $lock = Cache::lock('assignment-next:' . $assignment->id, 30);
+
+        if (! $lock->get()) {
+            return false;
+        }
+
+        try {
+            return $this->processSingleAssignmentLocked($assignment, $messaging, $force);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    private function processSingleAssignmentLocked(
         DeviceAssignment $assignment,
         mixed $messaging,
         bool $force
