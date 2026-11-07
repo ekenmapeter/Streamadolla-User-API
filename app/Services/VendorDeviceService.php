@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\Device;
+use App\Models\DeviceAssignment;
+use App\Models\DeviceSession;
 use App\Models\User;
 use App\Models\UserDevice;
 
@@ -23,44 +25,46 @@ class VendorDeviceService
 
         $newDeviceId = 'user-' . $userDevice->fingerprint;
 
-        // When the app upgrades from a backed-up/cloned UUID to a hardware
-        // ID, move the existing fleet row instead of creating a duplicate.
-        // This keeps assignments, totals and sessions attached to the phone.
+        // Include soft-deleted rows: they still occupy the unique device_id
+        // and fcm_token indexes, so they must be merged/restored instead of
+        // causing an insert failure.
+        $existing = Device::withTrashed()
+            ->where('device_id', $newDeviceId)
+            ->first();
+
         $oldDevice = null;
         if ($previousFingerprint && $previousFingerprint !== $userDevice->fingerprint) {
-            $oldDevice = Device::where('device_id', 'user-' . $previousFingerprint)
+            $oldDevice = Device::withTrashed()
+                ->where('device_id', 'user-' . $previousFingerprint)
                 ->where('user_id', $user->id)
                 ->first();
         }
 
-        $duplicateTokens = Device::where('fcm_token', $userDevice->fcm_token)
-            ->where('device_id', '!=', $newDeviceId);
-
-        if ($oldDevice) {
-            $duplicateTokens->where('id', '!=', $oldDevice->id);
+        if ($oldDevice && $existing && $oldDevice->id !== $existing->id) {
+            $this->mergeInto($oldDevice, $existing);
+            $oldDevice = null;
         }
 
-        $duplicateTokens->update(['fcm_token' => null]);
-
-        $existing = Device::where('device_id', $newDeviceId)->first();
-
         if ($oldDevice && ! $existing) {
+            $this->clearDuplicateToken($userDevice->fcm_token, $oldDevice->id);
+
             $oldDevice->update([
                 'device_id' => $newDeviceId,
                 'user_id' => $user->id,
                 'fcm_token' => $userDevice->fcm_token,
                 'name' => $oldDevice->name ?? $user->name . "'s phone",
-                'metadata' => [
-                    'user_fingerprint' => $userDevice->fingerprint,
-                    'user_email' => $user->email,
-                    'role' => $user->role,
-                    'user_device_id' => $userDevice->id,
-                ],
+                'metadata' => $this->metadata($user, $userDevice),
                 'status' => 'online',
                 'last_seen' => now(),
             ]);
 
             return $oldDevice->fresh();
+        }
+
+        $this->clearDuplicateToken($userDevice->fcm_token, $existing?->id);
+
+        if ($existing?->trashed()) {
+            $existing->restore();
         }
 
         return Device::updateOrCreate(
@@ -69,15 +73,55 @@ class VendorDeviceService
                 'user_id' => $user->id,
                 'fcm_token' => $userDevice->fcm_token,
                 'name' => $existing?->name ?? $user->name . "'s phone",
-                'metadata' => [
-                    'user_fingerprint' => $userDevice->fingerprint,
-                    'user_email' => $user->email,
-                    'role' => $user->role,
-                    'user_device_id' => $userDevice->id,
-                ],
+                'metadata' => $this->metadata($user, $userDevice),
                 'status' => 'online',
                 'last_seen' => now(),
             ]
         );
+    }
+
+    private function clearDuplicateToken(?string $token, ?int $exceptId = null): void
+    {
+        if (! $token) {
+            return;
+        }
+
+        $query = Device::where('fcm_token', $token);
+
+        if ($exceptId) {
+            $query->where('id', '!=', $exceptId);
+        }
+
+        $query->update(['fcm_token' => null]);
+    }
+
+    private function mergeInto(Device $old, Device $surviving): void
+    {
+        DeviceAssignment::where('device_id', $old->id)
+            ->update(['device_id' => $surviving->id]);
+
+        DeviceSession::where('device_id', $old->id)
+            ->update(['device_id' => $surviving->id]);
+
+        if ($surviving->trashed()) {
+            $surviving->restore();
+        }
+
+        $surviving->update([
+            'total_streams' => (int) $surviving->total_streams + (int) $old->total_streams,
+            'total_earned' => (float) $surviving->total_earned + (float) $old->total_earned,
+        ]);
+
+        $old->forceDelete();
+    }
+
+    private function metadata(User $user, UserDevice $userDevice): array
+    {
+        return [
+            'user_fingerprint' => $userDevice->fingerprint,
+            'user_email' => $user->email,
+            'role' => $user->role,
+            'user_device_id' => $userDevice->id,
+        ];
     }
 }
