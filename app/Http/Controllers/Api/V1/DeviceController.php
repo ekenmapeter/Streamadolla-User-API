@@ -77,7 +77,7 @@ class DeviceController extends Controller
         ]);
     }
 
-    public function heartbeat(Request $request)
+    public function heartbeat(Request $request, \App\Services\VendorDeviceService $vendorDevices)
     {
         $user = $request->user();
 
@@ -107,9 +107,24 @@ class DeviceController extends Controller
         ]);
 
         // Keep the linked fleet device fresh while the phone is rented.
-        \App\Models\Device::where('device_id', 'user-' . $device->fingerprint)
+        $fleetDevice = \App\Models\Device::withTrashed()
+            ->where('device_id', 'user-' . $device->fingerprint)
             ->where('user_id', $user->id)
-            ->update(['last_seen' => now(), 'status' => 'online']);
+            ->first();
+
+        if ($fleetDevice) {
+            $fleetDevice->update([
+                'last_seen' => now(),
+                'status' => 'online',
+                'fcm_token' => $device->fcm_token,
+            ]);
+        }
+
+        // Self-heal: if the fleet row was deleted, merged, or lost its token,
+        // recreate it from this heartbeat instead of waiting for a re-login.
+        if ($user->isVendor() && (! $fleetDevice || $fleetDevice->trashed() || empty($fleetDevice->fcm_token))) {
+            $vendorDevices->syncFleetDevice($user, $device);
+        }
 
         return response()->json([
             'success' => true,

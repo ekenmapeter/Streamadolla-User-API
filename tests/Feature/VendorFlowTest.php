@@ -703,6 +703,26 @@ class VendorFlowTest extends TestCase
         $this->assertEqualsWithDelta(0.75, app(WalletService::class)->balance($vendor->fresh()), 0.0000001);
     }
 
+    public function test_vendor_heartbeat_recreates_a_missing_fleet_device(): void
+    {
+        $this->seedBase();
+        $vendor = $this->registerVendor();
+        $this->vendorToken = $this->vendorToken($vendor);
+        $device = $this->registerVendorDevice($vendor, 'fp-self-heal', 'fcm-self-heal');
+
+        $device->delete();
+        $this->assertNull(Device::where('device_id', 'user-fp-self-heal')->first());
+
+        $this->postJson('/api/v1/device/heartbeat', [
+            'fingerprint' => 'fp-self-heal',
+        ], ['Authorization' => 'Bearer ' . $this->vendorToken])->assertOk();
+
+        $fleet = Device::where('device_id', 'user-fp-self-heal')->first();
+        $this->assertNotNull($fleet);
+        $this->assertSame('fcm-self-heal', $fleet->fcm_token);
+        $this->assertSame($vendor->id, $fleet->user_id);
+    }
+
     public function test_admin_can_retry_a_stopped_campaign_assignment(): void
     {
         $this->seedBase();
