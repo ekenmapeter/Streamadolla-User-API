@@ -19,6 +19,8 @@ class DeviceController extends Controller
             'fcm_token' => 'required|string',
             'platform' => 'sometimes|in:android,ios',
             'app_version' => 'nullable|string|max:30',
+            'model' => 'nullable|string|max:191',
+            'os_version' => 'nullable|string|max:100',
         ]);
 
         if ($validator->fails()) {
@@ -65,7 +67,12 @@ class DeviceController extends Controller
 
         // Vendors: mirror the phone into the fleet so the command center can
         // assign campaigns straight to it.
-        $vendorDevices->syncFleetDevice($user, $device, $previousFingerprint);
+        $vendorDevices->syncFleetDevice(
+            $user,
+            $device,
+            $previousFingerprint,
+            $request->only(['model', 'os_version']),
+        );
 
         return response()->json([
             'success' => true,
@@ -83,6 +90,8 @@ class DeviceController extends Controller
 
         $validator = Validator::make($request->all(), [
             'fingerprint' => 'required|string|max:255',
+            'model' => 'nullable|string|max:191',
+            'os_version' => 'nullable|string|max:100',
         ]);
 
         if ($validator->fails()) {
@@ -108,22 +117,36 @@ class DeviceController extends Controller
 
         // Keep the linked fleet device fresh while the phone is rented.
         $fleetDevice = \App\Models\Device::withTrashed()
-            ->where('device_id', 'user-' . $device->fingerprint)
+            ->where('device_id', 'user-'.$device->fingerprint)
             ->where('user_id', $user->id)
             ->first();
 
         if ($fleetDevice) {
+            $metadata = $fleetDevice->metadata ?? [];
+
+            foreach (['model', 'os_version'] as $key) {
+                if ($request->filled($key)) {
+                    $metadata[$key] = trim((string) $request->input($key));
+                }
+            }
+
             $fleetDevice->update([
                 'last_seen' => now(),
                 'status' => 'online',
                 'fcm_token' => $device->fcm_token,
+                'metadata' => $metadata,
             ]);
         }
 
         // Self-heal: if the fleet row was deleted, merged, or lost its token,
         // recreate it from this heartbeat instead of waiting for a re-login.
         if ($user->isVendor() && (! $fleetDevice || $fleetDevice->trashed() || empty($fleetDevice->fcm_token))) {
-            $vendorDevices->syncFleetDevice($user, $device);
+            $vendorDevices->syncFleetDevice(
+                $user,
+                $device,
+                null,
+                $request->only(['model', 'os_version']),
+            );
         }
 
         return response()->json([

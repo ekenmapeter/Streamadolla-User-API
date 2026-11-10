@@ -317,8 +317,9 @@
             <div class="divide-y divide-white/5 text-sm">
                 @foreach ([
                     ['GET', '/settings', 'App settings map + maintenance_mode flag. Compares X-App-Version against min_app_version.'],
-                    ['POST', '/device/register', 'Register this phone for push. Body: fingerprint, fcm_token, platform, app_version.'],
-                    ['POST', '/device/heartbeat', 'Refresh device last_seen. Body: fingerprint.'],
+                    ['POST', '/device/register', 'Register this phone for push. Body: fingerprint, fcm_token, platform, app_version, optional model and os_version.'],
+                    ['POST', '/device/heartbeat', 'Refresh device last_seen. Body: fingerprint, optional model and os_version.'],
+                    ['GET', '/vendor/devices?fingerprint=...', 'Vendor fleet list. Pass the phone fingerprint to return only that phone; omit it for the full fleet. Add fleet=1 to return the full fleet but mark the current phone.'],
                     ['POST', '/webhooks/paystack', 'Paystack webhook (public). Handles payment confirmation for campaign funding.'],
                 ] as [$method, $route, $desc])
                     <div class="px-6 py-3.5 flex items-start gap-4">

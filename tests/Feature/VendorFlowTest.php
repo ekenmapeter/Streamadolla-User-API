@@ -13,6 +13,7 @@ use App\Models\Track;
 use App\Models\User;
 use App\Models\UserDevice;
 use App\Models\WalletTransaction;
+use App\Services\VendorDeviceService;
 use App\Services\VendorSessionService;
 use App\Services\WalletService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -24,6 +25,7 @@ class VendorFlowTest extends TestCase
     use RefreshDatabase;
 
     private string $vendorToken = '';
+
     private array $tokens = [];
 
     private function seedBase(): void
@@ -50,8 +52,8 @@ class VendorFlowTest extends TestCase
             return $this->tokens[$user->email];
         }
 
-        $entry = Cache::get('email_verify:' . $user->email);
-        $this->assertNotNull($entry, 'Verification code missing for ' . $user->email);
+        $entry = Cache::get('email_verify:'.$user->email);
+        $this->assertNotNull($entry, 'Verification code missing for '.$user->email);
 
         $token = $this->postJson('/api/v1/auth/verify-email', [
             'email' => $user->email,
@@ -63,16 +65,35 @@ class VendorFlowTest extends TestCase
         return $token;
     }
 
-    private function registerVendorDevice(User $user, string $fingerprint = 'fp-vendor-1', string $token = 'fcm-vendor-1'): Device
-    {
-        $this->postJson('/api/v1/device/register', [
+    private function registerVendorDevice(
+        User $user,
+        string $fingerprint = 'fp-vendor-1',
+        string $token = 'fcm-vendor-1',
+        ?string $model = null,
+        ?string $osVersion = null,
+    ): Device {
+        $payload = [
             'fingerprint' => $fingerprint,
             'fcm_token' => $token,
             'platform' => 'android',
             'app_version' => '1.0.0',
-        ], ['Authorization' => 'Bearer ' . $this->vendorToken($user)])->assertOk();
+        ];
 
-        return Device::where('device_id', 'user-' . $fingerprint)->firstOrFail();
+        if ($model !== null) {
+            $payload['model'] = $model;
+        }
+
+        if ($osVersion !== null) {
+            $payload['os_version'] = $osVersion;
+        }
+
+        $this->postJson(
+            '/api/v1/device/register',
+            $payload,
+            ['Authorization' => 'Bearer '.$this->vendorToken($user)],
+        )->assertOk();
+
+        return Device::where('device_id', 'user-'.$fingerprint)->firstOrFail();
     }
 
     private function makeTrack(): Track
@@ -100,7 +121,7 @@ class VendorFlowTest extends TestCase
             'genre' => 'afrobeats',
             'duration_seconds' => 30,
             'status' => Track::STATUS_LIVE,
-            'payment_reference' => 'TR-V-' . strtoupper(uniqid()),
+            'payment_reference' => 'TR-V-'.strtoupper(uniqid()),
             'amount_paid_ngn' => 30000,
             'stream_budget' => 5,
             'approved_at' => now(),
@@ -124,7 +145,7 @@ class VendorFlowTest extends TestCase
     private function playOutSession(Device $device, DeviceAssignment $assignment, int $elapsed = 45): int
     {
         $this->postJson("/api/v1/vendor/sessions/{$assignment->id}/start", [], [
-            'Authorization' => 'Bearer ' . $this->vendorToken,
+            'Authorization' => 'Bearer '.$this->vendorToken,
         ])->assertCreated();
 
         // Simulate real wall-clock time having passed so the too-fast gate
@@ -137,14 +158,14 @@ class VendorFlowTest extends TestCase
 
         $this->postJson("/api/v1/vendor/sessions/{$assignment->id}/checkpoint", [
             'elapsed_seconds' => 15,
-        ], ['Authorization' => 'Bearer ' . $this->vendorToken])->assertOk();
+        ], ['Authorization' => 'Bearer '.$this->vendorToken])->assertOk();
 
         $this->postJson("/api/v1/vendor/sessions/{$assignment->id}/checkpoint", [
             'elapsed_seconds' => $elapsed,
-        ], ['Authorization' => 'Bearer ' . $this->vendorToken])->assertOk();
+        ], ['Authorization' => 'Bearer '.$this->vendorToken])->assertOk();
 
         $this->postJson("/api/v1/vendor/sessions/{$assignment->id}/complete", [], [
-            'Authorization' => 'Bearer ' . $this->vendorToken,
+            'Authorization' => 'Bearer '.$this->vendorToken,
         ])->assertCreated();
 
         return DeviceSession::where('device_assignment_id', $assignment->id)->value('id');
@@ -170,7 +191,7 @@ class VendorFlowTest extends TestCase
         $this->assertTrue($payload['user']['vendor']);
 
         $me = $this->getJson('/api/v1/me', [
-            'Authorization' => 'Bearer ' . $payload['token'],
+            'Authorization' => 'Bearer '.$payload['token'],
         ])->assertOk()->json();
 
         $this->assertSame('vendor', $me['user']['role']);
@@ -204,7 +225,7 @@ class VendorFlowTest extends TestCase
             'fingerprint' => 'fp-vendor-1',
             'fcm_token' => 'fcm-vendor-1',
             'platform' => 'android',
-        ], ['Authorization' => 'Bearer ' . $this->vendorToken])->assertOk();
+        ], ['Authorization' => 'Bearer '.$this->vendorToken])->assertOk();
 
         $this->assertDatabaseHas('user_devices', ['fingerprint' => 'fp-vendor-1', 'user_id' => $vendor->id]);
 
@@ -224,10 +245,10 @@ class VendorFlowTest extends TestCase
 
         $this->postJson('/api/v1/device/heartbeat', [
             'fingerprint' => 'fp-vendor-2',
-        ], ['Authorization' => 'Bearer ' . $this->vendorToken])->assertOk();
+        ], ['Authorization' => 'Bearer '.$this->vendorToken])->assertOk();
 
         $list = $this->getJson('/api/v1/vendor/devices', [
-            'Authorization' => 'Bearer ' . $this->vendorToken,
+            'Authorization' => 'Bearer '.$this->vendorToken,
         ])->assertOk()->json();
 
         $this->assertSame(1, $list['summary']['total_devices']);
@@ -236,9 +257,173 @@ class VendorFlowTest extends TestCase
 
         $this->putJson("/api/v1/vendor/devices/{$device->id}", [
             'name' => 'Shop phone',
-        ], ['Authorization' => 'Bearer ' . $this->vendorToken])->assertOk();
+        ], ['Authorization' => 'Bearer '.$this->vendorToken])->assertOk();
 
         $this->assertSame('Shop phone', $device->fresh()->name);
+    }
+
+    public function test_vendor_devices_are_scoped_to_the_current_phone(): void
+    {
+        $this->seedBase();
+        $vendor = $this->registerVendor();
+        $this->vendorToken = $this->vendorToken($vendor);
+
+        $phoneA = $this->registerVendorDevice(
+            $vendor,
+            'fp-phone-a',
+            'fcm-phone-a',
+            'Pixel 8',
+            'Android 15',
+        );
+        $phoneB = $this->registerVendorDevice(
+            $vendor,
+            'fp-phone-b',
+            'fcm-phone-b',
+            'iPhone 15',
+            'iOS 18',
+        );
+
+        // Every phone gets its own default name, even on the same fleet.
+        $this->assertNotSame($phoneA->name, $phoneB->name);
+        $this->assertStringContainsString('Pixel 8', $phoneA->name);
+        $this->assertStringContainsString('iPhone 15', $phoneB->name);
+
+        $scoped = $this->getJson('/api/v1/vendor/devices?fingerprint=fp-phone-a', [
+            'Authorization' => 'Bearer '.$this->vendorToken,
+        ])->assertOk()->json();
+
+        $this->assertSame(1, $scoped['summary']['total_devices']);
+        $this->assertSame($phoneA->id, $scoped['devices'][0]['id']);
+        $this->assertTrue($scoped['devices'][0]['is_current_device']);
+        $this->assertSame('Pixel 8', $scoped['devices'][0]['model']);
+        $this->assertSame('Android 15', $scoped['devices'][0]['os_version']);
+
+        $fleet = $this->getJson('/api/v1/vendor/devices', [
+            'Authorization' => 'Bearer '.$this->vendorToken,
+        ])->assertOk()->json();
+
+        $this->assertSame(2, $fleet['summary']['total_devices']);
+        $this->assertCount(2, array_unique(array_column($fleet['devices'], 'name')));
+
+        $fleetWithCurrent = $this->getJson(
+            '/api/v1/vendor/devices?fingerprint=fp-phone-a&fleet=1',
+            ['Authorization' => 'Bearer '.$this->vendorToken],
+        )->assertOk()->json();
+
+        $this->assertSame(2, $fleetWithCurrent['summary']['total_devices']);
+        $this->assertCount(1, array_filter(array_column($fleetWithCurrent['devices'], 'is_current_device')));
+    }
+
+    public function test_custom_device_name_survives_re_registration(): void
+    {
+        $this->seedBase();
+        $vendor = $this->registerVendor();
+        $this->vendorToken = $this->vendorToken($vendor);
+        $device = $this->registerVendorDevice($vendor, 'fp-custom-name', 'fcm-custom-name', 'Pixel 8');
+
+        $device->update(['name' => 'Shop phone']);
+
+        $this->postJson('/api/v1/device/register', [
+            'fingerprint' => 'fp-custom-name',
+            'fcm_token' => 'fcm-custom-name',
+            'platform' => 'android',
+            'app_version' => '1.0.0',
+            'model' => 'Pixel 8',
+        ], ['Authorization' => 'Bearer '.$this->vendorToken])->assertOk();
+
+        $this->assertSame('Shop phone', $device->fresh()->name);
+    }
+
+    public function test_device_name_upgrades_from_suffix_only_to_model(): void
+    {
+        $this->seedBase();
+        $vendor = $this->registerVendor();
+        $this->vendorToken = $this->vendorToken($vendor);
+
+        // An older app version registers without model metadata.
+        $device = $this->registerVendorDevice($vendor, 'fp-old-app', 'fcm-old-app');
+        $this->assertStringNotContainsString('Pixel 8', $device->name);
+
+        $this->postJson('/api/v1/device/register', [
+            'fingerprint' => 'fp-old-app',
+            'fcm_token' => 'fcm-old-app',
+            'platform' => 'android',
+            'app_version' => '1.1.0',
+            'model' => 'Pixel 8',
+        ], ['Authorization' => 'Bearer '.$this->vendorToken])->assertOk();
+
+        $this->assertStringContainsString('Pixel 8', $device->fresh()->name);
+    }
+
+    public function test_generic_device_names_are_backfilled_with_unique_suffixes(): void
+    {
+        $this->seedBase();
+        $vendor = $this->registerVendor();
+
+        $first = Device::create([
+            'user_id' => $vendor->id,
+            'name' => "Grace Vendor's phone",
+            'device_id' => 'user-fp-backfill-a',
+            'fcm_token' => 'fcm-backfill-a',
+            'status' => 'online',
+            'last_seen' => now(),
+        ]);
+        $second = Device::create([
+            'user_id' => $vendor->id,
+            'name' => "Grace Vendor's phone",
+            'device_id' => 'user-fp-backfill-b',
+            'fcm_token' => 'fcm-backfill-b',
+            'status' => 'online',
+            'last_seen' => now(),
+        ]);
+
+        $listener = User::create([
+            'name' => 'Listener Person',
+            'email' => 'backfill-listener@example.com',
+            'password' => bcrypt('password123'),
+            'role' => User::ROLE_LISTENER,
+            'status' => 'active',
+        ]);
+        $listenerDevice = Device::create([
+            'user_id' => $listener->id,
+            'name' => "Listener Person's phone",
+            'device_id' => 'user-fp-backfill-listener',
+            'fcm_token' => 'fcm-backfill-listener',
+            'status' => 'online',
+            'last_seen' => now(),
+        ]);
+
+        $updated = app(VendorDeviceService::class)->backfillNames();
+
+        $this->assertSame(2, $updated);
+        $this->assertNotSame($first->fresh()->name, $second->fresh()->name);
+        $this->assertStringContainsString("Grace Vendor's phone", $first->fresh()->name);
+
+        // Listener rental devices are not part of the vendor fleet.
+        $this->assertSame("Listener Person's phone", $listenerDevice->fresh()->name);
+
+        // Running again is a no-op: the suffix names are stable.
+        $this->assertSame(0, app(VendorDeviceService::class)->backfillNames());
+    }
+
+    public function test_heartbeat_self_heal_uses_model_for_unique_name(): void
+    {
+        $this->seedBase();
+        $vendor = $this->registerVendor();
+        $this->vendorToken = $this->vendorToken($vendor);
+        $device = $this->registerVendorDevice($vendor, 'fp-self-heal-model', 'fcm-self-heal-model', 'Pixel 8');
+
+        $device->delete();
+
+        $this->postJson('/api/v1/device/heartbeat', [
+            'fingerprint' => 'fp-self-heal-model',
+            'model' => 'Pixel 8',
+            'os_version' => 'Android 15',
+        ], ['Authorization' => 'Bearer '.$this->vendorToken])->assertOk();
+
+        $fleet = Device::where('device_id', 'user-fp-self-heal-model')->firstOrFail();
+        $this->assertStringContainsString('Pixel 8', $fleet->name);
+        $this->assertSame('Android 15', $fleet->metadata['os_version']);
     }
 
     public function test_vendor_cannot_rename_foreign_device(): void
@@ -256,7 +441,7 @@ class VendorFlowTest extends TestCase
 
         $this->putJson("/api/v1/vendor/devices/{$device->id}", [
             'name' => 'Hijacked',
-        ], ['Authorization' => 'Bearer ' . $this->vendorToken])->assertForbidden();
+        ], ['Authorization' => 'Bearer '.$this->vendorToken])->assertForbidden();
 
         $this->assertNotSame('Hijacked', $device->fresh()->name);
     }
@@ -283,11 +468,11 @@ class VendorFlowTest extends TestCase
         $this->assertNotNull($play);
         $this->assertEqualsWithDelta(0.001, $play->reward_amount, 0.0000001);
 
-        $this->assertEqualsWithDelta(0.001, (new WalletService())->balance($vendor->fresh()), 0.0000001);
+        $this->assertEqualsWithDelta(0.001, (new WalletService)->balance($vendor->fresh()), 0.0000001);
 
         // Earnings record shows the rewarded stream.
         $earnings = $this->getJson('/api/v1/vendor/earnings', [
-            'Authorization' => 'Bearer ' . $this->vendorToken,
+            'Authorization' => 'Bearer '.$this->vendorToken,
         ])->assertOk()->json();
 
         $this->assertSame(1, $earnings['summary']['total_streams']);
@@ -304,11 +489,11 @@ class VendorFlowTest extends TestCase
         $assignment = $this->makeAssignment($device, $this->makeTrack());
 
         $this->postJson("/api/v1/vendor/sessions/{$assignment->id}/start", [], [
-            'Authorization' => 'Bearer ' . $this->vendorToken,
+            'Authorization' => 'Bearer '.$this->vendorToken,
         ])->assertCreated();
 
         $this->postJson("/api/v1/vendor/sessions/{$assignment->id}/complete", [], [
-            'Authorization' => 'Bearer ' . $this->vendorToken,
+            'Authorization' => 'Bearer '.$this->vendorToken,
         ])->assertStatus(422);
 
         $this->assertDatabaseMissing('stream_plays', ['device_assignment_id' => $assignment->id]);
@@ -381,7 +566,7 @@ class VendorFlowTest extends TestCase
         $this->playOutSession($device, $assignment);
 
         $this->assertSame(2, StreamPlay::where('device_assignment_id', $assignment->id)->count());
-        $this->assertEqualsWithDelta(0.002, (new WalletService())->balance($vendor->fresh()), 0.0000001);
+        $this->assertEqualsWithDelta(0.002, (new WalletService)->balance($vendor->fresh()), 0.0000001);
     }
 
     public function test_track_advance_rewards_an_open_vendor_session_without_checkpoints(): void
@@ -426,7 +611,7 @@ class VendorFlowTest extends TestCase
 
         $this->assertSame('rewarded', $session->fresh()->status);
         $this->assertDatabaseHas('stream_plays', ['device_session_id' => $session->id]);
-        $this->assertEqualsWithDelta(0.001, (new WalletService())->balance($vendor->fresh()), 0.0000001);
+        $this->assertEqualsWithDelta(0.001, (new WalletService)->balance($vendor->fresh()), 0.0000001);
     }
 
     public function test_low_checkpoints_and_too_fast_completion_flagged_fraud(): void
@@ -438,16 +623,16 @@ class VendorFlowTest extends TestCase
         $assignment = $this->makeAssignment($device, $this->makeTrack());
 
         $this->postJson("/api/v1/vendor/sessions/{$assignment->id}/start", [], [
-            'Authorization' => 'Bearer ' . $this->vendorToken,
+            'Authorization' => 'Bearer '.$this->vendorToken,
         ])->assertCreated();
 
         // Only ONE checkpoint, elapsed >= min, but wall-clock still near-zero.
         $this->postJson("/api/v1/vendor/sessions/{$assignment->id}/checkpoint", [
             'elapsed_seconds' => 30,
-        ], ['Authorization' => 'Bearer ' . $this->vendorToken])->assertOk();
+        ], ['Authorization' => 'Bearer '.$this->vendorToken])->assertOk();
 
         $response = $this->postJson("/api/v1/vendor/sessions/{$assignment->id}/complete", [], [
-            'Authorization' => 'Bearer ' . $this->vendorToken,
+            'Authorization' => 'Bearer '.$this->vendorToken,
         ])->assertStatus(422)->json();
 
         $this->assertArrayHasKey('flags', $response);
@@ -457,7 +642,7 @@ class VendorFlowTest extends TestCase
         $session = DeviceSession::where('device_assignment_id', $assignment->id)->firstOrFail();
         $this->assertSame('fraud', $session->status);
         $this->assertDatabaseMissing('stream_plays', ['device_assignment_id' => $assignment->id]);
-        $this->assertSame(0, (new WalletService())->balance($vendor->fresh()));
+        $this->assertSame(0, (new WalletService)->balance($vendor->fresh()));
     }
 
     public function test_daily_per_device_cap_blocks_reward(): void
@@ -469,12 +654,12 @@ class VendorFlowTest extends TestCase
         $assignment = $this->makeAssignment($device, $this->makeTrack());
 
         Cache::put(
-            'vendor_stream_count:' . $device->id . ':' . now()->toDateString(),
+            'vendor_stream_count:'.$device->id.':'.now()->toDateString(),
             50
         );
 
         $this->postJson("/api/v1/vendor/sessions/{$assignment->id}/start", [], [
-            'Authorization' => 'Bearer ' . $this->vendorToken,
+            'Authorization' => 'Bearer '.$this->vendorToken,
         ])->assertCreated();
 
         // Long-enough, well-checkpointed session that only trips the cap.
@@ -485,13 +670,13 @@ class VendorFlowTest extends TestCase
 
         $this->postJson("/api/v1/vendor/sessions/{$assignment->id}/checkpoint", [
             'elapsed_seconds' => 15,
-        ], ['Authorization' => 'Bearer ' . $this->vendorToken])->assertOk();
+        ], ['Authorization' => 'Bearer '.$this->vendorToken])->assertOk();
         $this->postJson("/api/v1/vendor/sessions/{$assignment->id}/checkpoint", [
             'elapsed_seconds' => 45,
-        ], ['Authorization' => 'Bearer ' . $this->vendorToken])->assertOk();
+        ], ['Authorization' => 'Bearer '.$this->vendorToken])->assertOk();
 
         $this->postJson("/api/v1/vendor/sessions/{$assignment->id}/complete", [], [
-            'Authorization' => 'Bearer ' . $this->vendorToken,
+            'Authorization' => 'Bearer '.$this->vendorToken,
         ])->assertStatus(422);
 
         $session = DeviceSession::where('device_assignment_id', $assignment->id)->firstOrFail();
@@ -511,14 +696,14 @@ class VendorFlowTest extends TestCase
 
         // A second completion attempt finds the session closed.
         $this->postJson("/api/v1/vendor/sessions/{$assignment->id}/complete", [], [
-            'Authorization' => 'Bearer ' . $this->vendorToken,
+            'Authorization' => 'Bearer '.$this->vendorToken,
         ])->assertForbidden();
 
         // Re-running the job must not double-pay.
         (new VendorRewardJob($sessionId))->handle(app(WalletService::class));
 
         $this->assertSame(1, StreamPlay::where('device_assignment_id', $assignment->id)->count());
-        $this->assertEqualsWithDelta(0.001, (new WalletService())->balance($vendor->fresh()), 0.0000001);
+        $this->assertEqualsWithDelta(0.001, (new WalletService)->balance($vendor->fresh()), 0.0000001);
     }
 
     public function test_stop_control_abandons_session_without_reward(): void
@@ -530,12 +715,12 @@ class VendorFlowTest extends TestCase
         $assignment = $this->makeAssignment($device, $this->makeTrack());
 
         $this->postJson("/api/v1/vendor/sessions/{$assignment->id}/start", [], [
-            'Authorization' => 'Bearer ' . $this->vendorToken,
+            'Authorization' => 'Bearer '.$this->vendorToken,
         ])->assertCreated();
 
         $this->postJson("/api/v1/vendor/sessions/{$assignment->id}/control", [
             'status' => 'stopped',
-        ], ['Authorization' => 'Bearer ' . $this->vendorToken])->assertOk();
+        ], ['Authorization' => 'Bearer '.$this->vendorToken])->assertOk();
 
         $session = DeviceSession::where('device_assignment_id', $assignment->id)->firstOrFail();
         $this->assertSame('abandoned', $session->status);
@@ -562,7 +747,7 @@ class VendorFlowTest extends TestCase
         $assignment = $this->makeAssignment($device, $this->makeTrack());
 
         $this->postJson("/api/v1/vendor/sessions/{$assignment->id}/start", [], [
-            'Authorization' => 'Bearer ' . $this->vendorToken,
+            'Authorization' => 'Bearer '.$this->vendorToken,
         ])->assertForbidden();
     }
 
@@ -575,11 +760,11 @@ class VendorFlowTest extends TestCase
         $this->vendorToken = $this->vendorToken($vendor);
 
         $this->getJson('/api/v1/wallet', [
-            'Authorization' => 'Bearer ' . $this->vendorToken,
+            'Authorization' => 'Bearer '.$this->vendorToken,
         ])->assertOk()->assertJson(['success' => true, 'balance' => 0]);
 
         $this->putJson('/api/v1/me', ['name' => 'Renamed Vendor'], [
-            'Authorization' => 'Bearer ' . $this->vendorToken,
+            'Authorization' => 'Bearer '.$this->vendorToken,
         ])->assertOk();
 
         $this->assertSame('Renamed Vendor', $vendor->fresh()->name);
@@ -627,7 +812,7 @@ class VendorFlowTest extends TestCase
         $assignment->update(['status' => 'pending']);
 
         $this->getJson('/api/v1/vendor/assignments/pending?fingerprint=fp-pending-1', [
-            'Authorization' => 'Bearer ' . $this->vendorToken,
+            'Authorization' => 'Bearer '.$this->vendorToken,
         ])->assertOk()
             ->assertJsonPath('assignments.0.assignment_id', $assignment->id)
             ->assertJsonPath('assignments.0.media_url', $track->media_url)
@@ -650,7 +835,7 @@ class VendorFlowTest extends TestCase
             'fcm_token' => 'fcm-hardware-new',
             'platform' => 'android',
             'app_version' => '1.0.5',
-        ], ['Authorization' => 'Bearer ' . $this->vendorToken])->assertOk();
+        ], ['Authorization' => 'Bearer '.$this->vendorToken])->assertOk();
 
         $this->assertDatabaseMissing('user_devices', ['fingerprint' => 'fp-restored-old']);
         $this->assertDatabaseHas('user_devices', ['fingerprint' => 'fp-hardware-new']);
@@ -674,7 +859,7 @@ class VendorFlowTest extends TestCase
         app(WalletService::class)->credit($vendor, 2.00, WalletTransaction::TYPE_VENDOR);
 
         $this->getJson('/api/v1/wallet', [
-            'Authorization' => 'Bearer ' . $this->vendorToken,
+            'Authorization' => 'Bearer '.$this->vendorToken,
         ])->assertOk()
             ->assertJsonPath('currency', 'USD')
             ->assertJsonPath('balance', 2)
@@ -688,7 +873,7 @@ class VendorFlowTest extends TestCase
                 'account_number' => '0123456789',
                 'account_name' => 'Grace Vendor',
             ],
-        ], ['Authorization' => 'Bearer ' . $this->vendorToken])
+        ], ['Authorization' => 'Bearer '.$this->vendorToken])
             ->assertCreated()
             ->assertJsonPath('payout.currency', 'USD')
             ->assertJsonPath('payout.amount', 1.25);
@@ -715,7 +900,7 @@ class VendorFlowTest extends TestCase
 
         $this->postJson('/api/v1/device/heartbeat', [
             'fingerprint' => 'fp-self-heal',
-        ], ['Authorization' => 'Bearer ' . $this->vendorToken])->assertOk();
+        ], ['Authorization' => 'Bearer '.$this->vendorToken])->assertOk();
 
         $fleet = Device::where('device_id', 'user-fp-self-heal')->first();
         $this->assertNotNull($fleet);

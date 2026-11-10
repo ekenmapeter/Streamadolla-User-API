@@ -86,6 +86,11 @@
                             <tr class="hover:bg-white/5 transition">
                                 <td class="px-5 py-3.5">
                                     <p class="font-semibold truncate max-w-[180px]">{{ $device->name ?? 'Unnamed device' }}</p>
+                                    @if (!empty($device->metadata['model']))
+                                        <p class="text-[11px] text-gray-500 truncate max-w-[180px]">
+                                            {{ $device->metadata['model'] }}@if (!empty($device->metadata['os_version'])) · {{ $device->metadata['os_version'] }}@endif
+                                        </p>
+                                    @endif
                                     <p class="text-[11px] font-mono text-gray-600 truncate">{{ $device->device_id }}</p>
                                 </td>
                                 <td class="px-4 py-3.5">

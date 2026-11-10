@@ -14,16 +14,27 @@ class VendorController extends Controller
     public function devices(Request $request)
     {
         $user = $request->user();
+        $fingerprint = trim((string) $request->query('fingerprint', ''));
+        $includeFleet = $request->boolean('fleet');
 
-        $devices = $user->devices()
+        $query = $user->devices()
             ->withCount([
                 'sessions as streams_today' => fn ($q) => $q
                     ->where('status', 'rewarded')
                     ->whereDate('completed_at', today()),
-            ])
+            ]);
+
+        // The vendor app scopes itself to the phone it is running on. Passing
+        // no fingerprint keeps the full-fleet response for admin/back-compat.
+        // `fleet=1` returns every device but still marks which one is current.
+        if ($fingerprint !== '' && ! $includeFleet) {
+            $query->where('device_id', 'user-'.$fingerprint);
+        }
+
+        $devices = $query
             ->orderByDesc('last_seen')
             ->get()
-            ->map(fn (Device $device) => $this->devicePayload($device));
+            ->map(fn (Device $device) => $this->devicePayload($device, $fingerprint !== '' ? $fingerprint : null));
 
         $summary = [
             'total_devices' => $devices->count(),
@@ -103,7 +114,7 @@ class VendorController extends Controller
         ]);
     }
 
-    private function devicePayload(Device $device): array
+    private function devicePayload(Device $device, ?string $fingerprint = null): array
     {
         return [
             'id' => $device->id,
@@ -112,6 +123,10 @@ class VendorController extends Controller
             'status' => $device->status,
             'last_seen' => $device->last_seen?->toIso8601String(),
             'platform' => $device->metadata['platform'] ?? null,
+            'model' => $device->metadata['model'] ?? null,
+            'os_version' => $device->metadata['os_version'] ?? null,
+            'is_current_device' => $fingerprint !== null
+                && $device->device_id === 'user-'.$fingerprint,
             'streams_today' => (int) ($device->streams_today ?? 0),
             'total_streams' => (int) $device->total_streams,
             'total_earned' => Money::number($device->total_earned),
