@@ -27,7 +27,8 @@ class RentalService
     {
         $deviceId = 'user-' . $userDevice->fingerprint;
 
-        Device::where('fcm_token', $userDevice->fcm_token)
+        Device::withTrashed()
+            ->where('fcm_token', $userDevice->fcm_token)
             ->where('device_id', '!=', $deviceId)
             ->update(['fcm_token' => null]);
 

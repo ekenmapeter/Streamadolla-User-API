@@ -66,13 +66,19 @@ class DeviceController extends Controller
         );
 
         // Vendors: mirror the phone into the fleet so the command center can
-        // assign campaigns straight to it.
-        $vendorDevices->syncFleetDevice(
-            $user,
-            $device,
-            $previousFingerprint,
-            $request->only(['model', 'os_version']),
-        );
+        // assign campaigns straight to it. A mirroring failure must never
+        // abort registration — otherwise the app stops sending heartbeats
+        // and the phone disappears from the admin until it is relaunched.
+        try {
+            $vendorDevices->syncFleetDevice(
+                $user,
+                $device,
+                $previousFingerprint,
+                $request->only(['model', 'os_version']),
+            );
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return response()->json([
             'success' => true,
@@ -141,12 +147,16 @@ class DeviceController extends Controller
         // Self-heal: if the fleet row was deleted, merged, or lost its token,
         // recreate it from this heartbeat instead of waiting for a re-login.
         if ($user->isVendor() && (! $fleetDevice || $fleetDevice->trashed() || empty($fleetDevice->fcm_token))) {
-            $vendorDevices->syncFleetDevice(
-                $user,
-                $device,
-                null,
-                $request->only(['model', 'os_version']),
-            );
+            try {
+                $vendorDevices->syncFleetDevice(
+                    $user,
+                    $device,
+                    null,
+                    $request->only(['model', 'os_version']),
+                );
+            } catch (\Throwable $e) {
+                report($e);
+            }
         }
 
         return response()->json([

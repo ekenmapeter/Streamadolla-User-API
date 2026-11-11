@@ -203,7 +203,9 @@ class VendorDeviceService
             return;
         }
 
-        $query = Device::where('fcm_token', $token);
+        // Include soft-deleted rows: they still occupy the unique index, so
+        // leaving their token behind makes the next phone fail to register.
+        $query = Device::withTrashed()->where('fcm_token', $token);
 
         if ($exceptId) {
             $query->where('id', '!=', $exceptId);

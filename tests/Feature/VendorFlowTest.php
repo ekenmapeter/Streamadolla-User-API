@@ -236,6 +236,56 @@ class VendorFlowTest extends TestCase
         $this->assertSame('online', $fleet->status);
     }
 
+    public function test_register_recovers_when_soft_deleted_device_holds_the_token(): void
+    {
+        $this->seedBase();
+        $vendor = $this->registerVendor();
+        $this->vendorToken = $this->vendorToken($vendor);
+
+        // A device that was removed from the command center still occupies the
+        // unique fcm_token index because soft-deleted rows are not cleared.
+        $removed = $this->registerVendorDevice($vendor, 'fp-removed', 'fcm-shared-token');
+        $removed->delete();
+
+        $this->postJson('/api/v1/device/register', [
+            'fingerprint' => 'fp-replacement',
+            'fcm_token' => 'fcm-shared-token',
+            'platform' => 'android',
+            'app_version' => '1.1.0',
+        ], ['Authorization' => 'Bearer '.$this->vendorToken])->assertOk();
+
+        $replacement = Device::where('device_id', 'user-fp-replacement')->first();
+        $this->assertNotNull($replacement);
+        $this->assertSame('fcm-shared-token', $replacement->fcm_token);
+        $this->assertNull($removed->fresh()->fcm_token);
+    }
+
+    public function test_registration_succeeds_even_when_fleet_mirroring_fails(): void
+    {
+        $this->seedBase();
+        $vendor = $this->registerVendor();
+        $this->vendorToken = $this->vendorToken($vendor);
+
+        $this->mock(VendorDeviceService::class, function ($mock) {
+            $mock->shouldReceive('syncFleetDevice')
+                ->andThrow(new \RuntimeException('mirror failed'));
+        });
+
+        $this->postJson('/api/v1/device/register', [
+            'fingerprint' => 'fp-mirror-fail',
+            'fcm_token' => 'fcm-mirror-fail',
+            'platform' => 'android',
+            'app_version' => '1.1.0',
+        ], ['Authorization' => 'Bearer '.$this->vendorToken])->assertOk();
+
+        // The phone still saves its identity and can start heartbeating, so
+        // the next heartbeat can repair the missing fleet row.
+        $this->assertDatabaseHas('user_devices', [
+            'fingerprint' => 'fp-mirror-fail',
+            'user_id' => $vendor->id,
+        ]);
+    }
+
     public function test_vendor_devices_list_and_rename(): void
     {
         $this->seedBase();
