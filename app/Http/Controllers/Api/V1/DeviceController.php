@@ -3,12 +3,21 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\Device;
+use App\Models\User;
 use App\Models\UserDevice;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class DeviceController extends Controller
 {
+    /**
+     * How long a device must have been quiet before its fingerprint can be
+     * migrated by another install. A live phone must never lose its identity
+     * because a cloned app installation claims the same previous ID.
+     */
+    private const REKEY_STALE_MINUTES = 15;
+
     public function register(Request $request, \App\Services\VendorDeviceService $vendorDevices)
     {
         $user = $request->user();
@@ -28,12 +37,18 @@ class DeviceController extends Controller
         }
 
         $fingerprint = $request->fingerprint;
-        $previousFingerprint = $request->input('previous_fingerprint');
+        $previousFingerprint = $this->rekeyablePreviousFingerprint(
+            $user,
+            $fingerprint,
+            $request->input('previous_fingerprint'),
+        );
         $device = null;
 
-        // A restored/cloned install may have an old UUID. Re-key that row to
-        // the phone's hardware ID instead of creating a second fleet device,
-        // which would leave campaigns attached to the wrong phone.
+        // A genuinely restored install may have an old random UUID. Re-key
+        // that row to the phone's hardware ID instead of creating a second
+        // fleet device. Never do this for a cloned install that points at a
+        // live phone, or the source phone's row/name/assignments move to the
+        // clone every time the app restarts.
         if ($previousFingerprint && $previousFingerprint !== $fingerprint) {
             $old = UserDevice::where('fingerprint', $previousFingerprint)
                 ->where('user_id', $user->id)
@@ -166,5 +181,49 @@ class DeviceController extends Controller
             // unregistered), ask the app to refresh and register again.
             're_register' => empty($device->fcm_token),
         ]);
+    }
+
+    /**
+     * Only allow a previous fingerprint to be taken over when it is a legacy
+     * random UUID and the old install has gone quiet. Hardware-ID based
+     * fingerprints are never migrated: a cloned app installation copying the
+     * source phone's prefs would otherwise steal a live device row.
+     */
+    private function rekeyablePreviousFingerprint(
+        User $user,
+        string $fingerprint,
+        ?string $previous,
+    ): ?string {
+        if (! $previous || $previous === $fingerprint) {
+            return null;
+        }
+
+        if (str_starts_with($previous, 'hw-')) {
+            return null;
+        }
+
+        $old = UserDevice::where('fingerprint', $previous)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (! $old) {
+            return null;
+        }
+
+        $fleet = Device::withTrashed()
+            ->where('device_id', 'user-'.$previous)
+            ->where('user_id', $user->id)
+            ->first();
+
+        $lastSeen = collect([$old->last_seen_at, $fleet?->last_seen])
+            ->filter()
+            ->sortDesc()
+            ->first();
+
+        if ($lastSeen && $lastSeen->gt(now()->subMinutes(self::REKEY_STALE_MINUTES))) {
+            return null;
+        }
+
+        return $previous;
     }
 }

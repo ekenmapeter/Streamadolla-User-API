@@ -879,6 +879,11 @@ class VendorFlowTest extends TestCase
         $assignment = $this->makeAssignment($oldDevice, $this->makeTrack());
         $assignment->update(['status' => 'playing', 'started_at' => now()]);
 
+        // The old install must be quiet before another install may take over
+        // its legacy UUID (otherwise this is a clone stealing a live phone).
+        $oldDevice->update(['last_seen' => now()->subHour()]);
+        UserDevice::where('fingerprint', 'fp-restored-old')->update(['last_seen_at' => now()->subHour()]);
+
         $this->postJson('/api/v1/device/register', [
             'fingerprint' => 'fp-hardware-new',
             'previous_fingerprint' => 'fp-restored-old',
@@ -898,6 +903,42 @@ class VendorFlowTest extends TestCase
         $assignment->refresh();
         $this->assertSame('playing', $assignment->status);
         $this->assertSame($newDevice->id, $assignment->device_id);
+    }
+
+    public function test_cloned_install_does_not_steal_a_live_device_identity(): void
+    {
+        $this->seedBase();
+        $vendor = $this->registerVendor();
+        $this->vendorToken = $this->vendorToken($vendor);
+
+        $victor = $this->registerVendorDevice($vendor, 'hw-victor', 'fcm-victor', 'Pixel 8');
+        $victor->update(['name' => 'Victor', 'last_seen' => now()]);
+        $assignment = $this->makeAssignment($victor, $this->makeTrack());
+
+        // A cloned install still carries the source phone's prefs, so it sends
+        // Victoria's fingerprint as `previous_fingerprint` on first launch.
+        $this->postJson('/api/v1/device/register', [
+            'fingerprint' => 'hw-clone',
+            'previous_fingerprint' => 'hw-victor',
+            'fcm_token' => 'fcm-clone',
+            'platform' => 'android',
+            'app_version' => '1.1.0',
+            'model' => 'Pixel 8',
+        ], ['Authorization' => 'Bearer '.$this->vendorToken])->assertOk();
+
+        // Both phones must keep their own rows, names and campaigns.
+        $this->assertDatabaseHas('user_devices', ['fingerprint' => 'hw-victor', 'user_id' => $vendor->id]);
+        $this->assertDatabaseHas('user_devices', ['fingerprint' => 'hw-clone', 'user_id' => $vendor->id]);
+        $this->assertDatabaseHas('devices', [
+            'device_id' => 'user-hw-victor',
+            'name' => 'Victor',
+            'fcm_token' => 'fcm-victor',
+        ]);
+        $this->assertDatabaseHas('devices', [
+            'device_id' => 'user-hw-clone',
+            'fcm_token' => 'fcm-clone',
+        ]);
+        $this->assertSame($victor->id, $assignment->fresh()->device_id);
     }
 
     public function test_vendor_wallet_and_payout_are_denominated_in_usd(): void
