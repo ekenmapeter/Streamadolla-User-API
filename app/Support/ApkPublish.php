@@ -20,22 +20,43 @@ class ApkPublish
             return null;
         }
 
-        usort($files, fn ($a, $b) => filemtime($b) - filemtime($a));
+        $versionOf = static function (string $file): ?string {
+            $name = basename($file);
+
+            return preg_match('/v?(\d+\.\d+\.\d+)/', $name, $m) ? $m[1] : null;
+        };
+
+        // Sort by the version in the filename, not filemtime: a deploy or
+        // fresh clone gives every APK the same timestamp, which could make
+        // the endpoint hand out an older build. mtime is only a tie-breaker.
+        usort($files, function (string $a, string $b) use ($versionOf) {
+            $va = $versionOf($a);
+            $vb = $versionOf($b);
+
+            if ($va === null && $vb === null) {
+                return filemtime($b) <=> filemtime($a);
+            }
+            if ($va === null) {
+                return 1;
+            }
+            if ($vb === null) {
+                return -1;
+            }
+
+            $byVersion = version_compare($vb, $va);
+
+            return $byVersion !== 0
+                ? $byVersion
+                : filemtime($b) <=> filemtime($a);
+        });
 
         $file = $files[0];
         $filename = basename($file);
 
-        $version = '';
-
         // The version baked into the filename (e.g. app-v1.2.0.apk) is the
         // source of truth — the file itself may outpace the app_version
         // setting if a deploy skipped the settings update.
-        if (preg_match('/v?(\d+\.\d+\.\d+)/', $filename, $m)) {
-            $version = $m[1];
-        }
-        if ($version === '') {
-            $version = (string) (AppSetting::get($versionSetting) ?? '1.0.0');
-        }
+        $version = $versionOf($file) ?? (string) (AppSetting::get($versionSetting) ?? '1.0.0');
 
         return [
             'filename' => $filename,

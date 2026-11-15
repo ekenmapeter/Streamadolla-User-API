@@ -194,6 +194,30 @@ class ListenerActivityTest extends TestCase
         }
     }
 
+    public function test_apk_latest_uses_highest_version_not_newest_file_time(): void
+    {
+        $older = public_path('vendor-download/test-sort-99.0.0.apk');
+        $newer = public_path('vendor-download/test-sort-99.0.1.apk');
+        @mkdir(dirname($older), 0777, true);
+        file_put_contents($older, 'older');
+        file_put_contents($newer, 'newer');
+
+        // Simulate a deploy where the older file has the newest timestamp.
+        touch($older, now()->addHours(2)->timestamp);
+        touch($newer, now()->subHour()->timestamp);
+
+        try {
+            $apk = app(\App\Support\ApkPublish::class)->latest('vendor-download', 'vendor_app_version');
+
+            $this->assertNotNull($apk);
+            $this->assertSame('99.0.1', $apk['version']);
+            $this->assertStringContainsString('test-sort-99.0.1.apk', $apk['url']);
+        } finally {
+            @unlink($older);
+            @unlink($newer);
+        }
+    }
+
     public function test_resend_verification_is_rate_limited_and_issues_a_new_code(): void
     {
         $this->postJson('/api/v1/auth/register', [
