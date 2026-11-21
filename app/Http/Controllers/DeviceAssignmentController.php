@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\AssignmentController;
 use App\Models\DeviceAssignment;
 use App\Services\FirebaseMessagingService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 use Illuminate\Support\Str;
 use Kreait\Firebase\Factory;
@@ -50,9 +51,16 @@ class DeviceAssignmentController extends Controller
                 ];
             });
 
+        $lastWorkerRun = Cache::get('campaigns:last-worker-run');
+
         return response()->json([
             'success' => true,
-            'assignments' => $assignments
+            'assignments' => $assignments,
+            'worker_last_run' => $lastWorkerRun
+                ? now()->setTimestamp((int) $lastWorkerRun)->toIso8601String()
+                : null,
+            'worker_healthy' => $lastWorkerRun
+                && (int) $lastWorkerRun >= now()->subMinutes(2)->timestamp,
         ]);
     }
 

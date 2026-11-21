@@ -251,6 +251,7 @@ class AssignmentController extends Controller
                 $data['track_id']        = $assignment->media_url;
                 $data['youtube_url']     = $assignment->media_url;
                 $data['apple_music_url'] = $assignment->media_url;
+                $data['duration_seconds'] = (string) ($assignment->campaignTrack?->duration_seconds ?? 180);
             } else {
                 $data['command'] = $action;
             }
@@ -404,6 +405,7 @@ class AssignmentController extends Controller
                             'youtube_url'     => $nextTrack->media_url,
                             'apple_music_url' => $nextTrack->media_url,
                             'media_url'       => $nextTrack->media_url,
+                            'duration_seconds' => (string) ($nextTrack->duration_seconds ?? 180),
                             'action'          => 'play',
                             'platform'        => $assignment->platform,
                             'assignment_id'   => (string) $assignment->id,
@@ -438,6 +440,7 @@ class AssignmentController extends Controller
                             'youtube_url'     => $campaignMediaUrl,
                             'apple_music_url' => $campaignMediaUrl,
                             'media_url'       => $campaignMediaUrl,
+                            'duration_seconds' => (string) ($campaign->interstitial_duration_seconds ?? 120),
                             'action'          => 'play',
                             'platform'        => $assignment->platform,
                             'assignment_id'   => (string) $assignment->id,
@@ -478,6 +481,7 @@ class AssignmentController extends Controller
                             'youtube_url'     => $nextTrack->media_url,
                             'apple_music_url' => $nextTrack->media_url,
                             'media_url'       => $nextTrack->media_url,
+                            'duration_seconds' => (string) ($nextTrack->duration_seconds ?? 180),
                             'action'          => 'play',
                             'platform'        => $assignment->platform,
                             'assignment_id'   => (string) $assignment->id,

@@ -18,14 +18,20 @@ use Kreait\Firebase\Factory;
 
 class ExecuteCampaigns extends Command
 {
-    protected $signature = 'campaigns:execute {--force : Skip duration checks and advance immediately}';
-    protected $description = 'Advance campaign tracks on devices. Loops internally every 60s to work within a 5-min cron limit.';
+    protected $signature = 'campaigns:execute {--force : Skip duration checks and advance immediately} {--device= : Only advance assignments for this fleet device ID}';
+    protected $description = 'Advance due campaign tracks on devices. Safe to run from the scheduler, the admin page, or a phone heartbeat.';
 
     private int $maxRuntime = 55;
 
     public function handle(): int
     {
         $force     = $this->option('force');
+        $deviceId  = $this->option('device');
+
+        // The admin page and the vendor heartbeat use this as a live health
+        // signal so a stopped scheduler is visible in the command center.
+        Cache::put('campaigns:last-worker-run', now()->timestamp, now()->addHours(2));
+
         $messaging = $this->getMessaging();
 
         if (!$messaging) {
@@ -41,7 +47,24 @@ class ExecuteCampaigns extends Command
             ->whereNotNull('campaign_track_id')
             ->where('status', 'playing')
             ->whereNotNull('started_at')
+            ->when($deviceId, fn ($q) => $q->where('device_id', (int) $deviceId))
             ->get();
+
+        // One phone can only play one campaign. If an old deploy left more
+        // than one playing row behind, keep the newest and stop the rest so
+        // the device cannot switch between different artists' tracks.
+        $activeAssignments = $activeAssignments
+            ->groupBy('device_id')
+            ->map(function ($assignments) {
+                $sorted = $assignments->sortByDesc('assigned_at')->values();
+                $sorted->slice(1)->each(
+                    fn ($stale) => $stale->update(['status' => 'stopped'])
+                );
+
+                return $sorted->first();
+            })
+            ->filter()
+            ->values();
 
         $count = $activeAssignments->count();
         $countMsg = "Found {$count} active playing assignment(s).";

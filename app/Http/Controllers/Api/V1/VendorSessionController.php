@@ -236,7 +236,9 @@ class VendorSessionController extends Controller
             ->where('device_id', $device->id)
             ->where('status', 'pending')
             ->whereNotNull('media_url')
-            ->orderBy('assigned_at')
+            // Newest wins if an old pending row was not cleared properly;
+            // the app starts the first item it receives.
+            ->orderByDesc('assigned_at')
             ->get()
             ->map(fn (DeviceAssignment $assignment) => [
                 'assignment_id' => $assignment->id,

@@ -509,6 +509,25 @@
                     .then(data => {
                         if (!data.success) return;
 
+                        if (data.worker_healthy !== undefined) {
+                            const dot = document.querySelector('.worker-dot');
+                            const text = document.querySelector('.worker-text');
+                            if (dot && text) {
+                                dot.classList.remove(
+                                    'bg-slate-400', 'bg-emerald-500',
+                                    'bg-rose-500', 'bg-primary-500'
+                                );
+                                dot.classList.add(
+                                    data.worker_healthy
+                                        ? 'bg-emerald-500'
+                                        : 'bg-rose-500'
+                                );
+                                text.innerText = data.worker_healthy
+                                    ? 'Worker: OK'
+                                    : 'Worker: Stale — configure server cron';
+                            }
+                        }
+
                         let needsReload = false;
 
                         data.assignments.forEach(assignment => {

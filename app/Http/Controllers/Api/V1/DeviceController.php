@@ -163,12 +163,28 @@ class DeviceController extends Controller
         // recreate it from this heartbeat instead of waiting for a re-login.
         if ($user->isVendor() && (! $fleetDevice || $fleetDevice->trashed() || empty($fleetDevice->fcm_token))) {
             try {
-                $vendorDevices->syncFleetDevice(
+                $fleetDevice = $vendorDevices->syncFleetDevice(
                     $user,
                     $device,
                     null,
                     $request->only(['model', 'os_version']),
-                );
+                ) ?? $fleetDevice;
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        // Vendor phones heartbeat every minute. Advancing due tracks here
+        // keeps campaigns running even when the admin page is closed or the
+        // server scheduler is not configured. The command's per-assignment
+        // lock prevents a duplicate advance if the scheduler also runs.
+        if ($user->isVendor() && $fleetDevice) {
+            try {
+                if ($fleetDevice->assignments()->where('status', 'playing')->exists()) {
+                    \Illuminate\Support\Facades\Artisan::call('campaigns:execute', [
+                        '--device' => $fleetDevice->id,
+                    ]);
+                }
             } catch (\Throwable $e) {
                 report($e);
             }
